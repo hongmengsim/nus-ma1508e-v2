@@ -68,10 +68,39 @@ The V2.1 engine is designed for easy verification. Run these checks in your Comm
 </details>
 
 <details>
-<summary><code>generateElemAdd(data)</code> / <code>generateElemSwap(data)</code></summary>
+<summary><mark><code>generateElemAdd(data)</code> / <code>generateElemSwap(data)</code></mark></summary>
 
 - **`data`**: Struct containing the elementary row operation.
 - **Description**: Returns the elementary matrix corresponding to the elementary row operation.
+  
+  <details>
+  <summary><code>More Information</code></summary>
+    
+  ## ⚙️ Internal Elementary Matrix Methods
+
+  While `generateElemMatrix` is the primary entry point for string commands, the following methods serve as the underlying "engine" for matrix     construction. These methods directly manipulate the identity matrix to create the required transformation.
+    
+  ### 1. `generateElemAdd(obj, data)`
+  
+  This method handles the **Row Addition/Subtraction** operation. Mathematically, this corresponds to the operation:
+  
+  $$R_{\text{target}}\leftarrow R_{\text{target}}+k\cdot R_{\text{source}}$$
+  
+  #### Logic
+  The method creates an $n \times n$ identity matrix $I$ and modifies the entry at the intersection of the target row and the source row. If $A$ is the input matrix, the elementary matrix $E$ is constructed such that $E \times A$ performs the addition.
+  
+  In the identity matrix $I$:
+  
+  $$E_{i,j}=k\quad\text{where }i=\text{target row}, j=\text{source row}$$
+  
+  #### Internal Data Structure
+  The `data` struct must contain:
+  * `data.size`: The dimension $n$ of the square matrix.
+  * `data.left(2)`: The index of the row being modified ($i$).
+  * `data.right(1)`: The scalar multiplier ($k$).
+  * `data.right(2)`: The index of the source row ($j$).
+  
+  </details>
 </details>
 
 <details>
@@ -84,7 +113,7 @@ The V2.1 engine is designed for easy verification. Run these checks in your Comm
 </details>
 
 <details>
-<summary><code>performERO(A)</code></summary>
+<summary><mark><code>performERO(A)</code></mark></summary>
   
 ### `performERO(A)`
 **Description:** Launches an interactive, step-by-step console loop that allows the user to apply Elementary Row Operations (EROs) to a given matrix. The matrix is updated and printed to the console after every successful operation. Type `exit` or `quit` to break the loop.
@@ -174,7 +203,7 @@ The console input parser requires specific formatting. Use the letter `R` follow
 </details>
 
 <details>
-<summary><code>gramSchmidt(v, showSteps)</code></summary>
+<summary><mark><code>gramSchmidt(v, showSteps)</code></mark></summary>
 
 - **`v`**: The basis to be converted into an orthonormal basis.
 - **`showSteps`**: Boolean (Default = `true`). Set to false to hide algebraic working.
@@ -182,10 +211,65 @@ The console input parser requires specific formatting. Use the letter `R` follow
 - **V2.1 Upgrades**:
   - **Surd Support**: Returns exact symbolic square roots (e.g., $\frac{\sqrt{6}}{3}$) instead of decimal approximations.
   - **QR Decomposition**: Returns `[e, r]` where `e` is the orthonormal $Q$ matrix and `r` is the upper-triangular $R$ matrix. Guaranteed to satisfy $V = QR$ and $Q^T Q = I$.
+
+    <details>
+    <summary><code>More Information & Usage Example</code></summary>
+      
+    ## 📐 Orthogonal Projection Methods
+
+    ### `gramSchmidt(obj, v, showSteps)`
+    
+    This method performs the exact **Gram-Schmidt Orthonormalization** process on a set of column vectors. Because it leverages MATLAB's symbolic math engine (`sym`), it retains exact surd (square root) and fractional forms rather than converting to floating-point decimals.
+    
+    #### Mathematical Logic
+    
+    Given a set of linearly independent input vectors v₁, v₂, ..., vₙ, the algorithm sequentially constructs an orthogonal set u₁, u₂, ..., uₙ by subtracting the projections of the current vector onto the previously computed orthonormal vectors:
+
+    uₖ = vₖ - Σ ⟨vₖ, eᵢ⟩ eᵢ
+    
+    It then normalizes the resulting vector to build the orthonormal basis e₁, e₂, ..., eₙ:
+    
+    eₖ = uₖ / ||uₖ||
+    
+    #### Parameters
+    * `v`: A matrix where each column represents an input vector $v_k$.
+    * `showSteps` *(optional, logical)*: Defaults to `true`. If enabled, the console will print a detailed, step-by-step breakdown of the projection coefficients, intermediate orthogonal vectors, and magnitude calculations.
+    
+    #### Returns
+    * `e`: A matrix containing the resulting orthonormal basis vectors. (This is mathematically equivalent to the $Q$ matrix in a $QR$ decomposition).
+    * `r`: An upper triangular matrix containing the projection coefficients and vector magnitudes. (This is equivalent to the $R$ matrix).
+    
+    ---
+    
+    ### 🛠 Usage Example
+    
+    ```matlab
+    % Instantiate the toolkit
+    tk = MA1508E();
+    
+    % Define a set of input column vectors as a matrix
+    % For example: v1 = [1; 1; 0] and v2 = [1; -1; 1]
+    V = [1,  1; 
+         1, -1; 
+         0,  1];
+    
+    % Run the Gram-Schmidt process (with step-by-step output enabled)
+    [Q, R] = tk.gramSchmidt(V, true);
+    
+    % Q contains the exact symbolic orthonormal basis
+    % R contains the upper triangular coefficients
+    fprintf('\n--- Final Outputs ---\n');
+    disp("Orthonormal Basis (Q):");
+    disp(Q);
+    
+    disp("Upper Triangular Matrix (R):");
+    disp(R);
+    ```
+    </details>
 </details>
 
 <details>
-<summary><code>calcLSS(A, b)</code></summary>
+<summary><mark><code>calcLSS(A, b)</code></mark></summary>
 
 - **`A`**: The matrix to calculate the least squares solution.
 - **`b`**: The column vector.
@@ -193,6 +277,69 @@ The console input parser requires specific formatting. Use the letter `R` follow
 - **V2.1 Upgrades**:
   - **Parametric Vector Form**: If the system is underdetermined (infinite solutions), the output automatically identifies the null space and formats the general solution as a geometric translation: $\mathbf{x} = \mathbf{x}_p + s_1 \mathbf{v}_1 + \dots$
   - Returns `[x_gen, basis, x_p]` for immediate workspace use.
+
+    <details>
+    <summary><code>More Information & Example Usage</code></summary>
+
+    ## 📈 Least Squares Analysis
+
+    ### `calcLSS(obj, A, b)`
+    
+    This method computes the **Least Squares Solution** for an overdetermined or inconsistent system of linear equations $Ax = b$. It intelligently handles both systems with a unique least squares solution and systems with infinite least squares solutions (returning the exact parameterized form).
+    
+    #### Mathematical Logic
+    When $Ax = b$ has no exact solution, this method finds the vector $\hat{x}$ that minimizes the error $\|Ax - b\|$ by solving the **Normal Equations**:
+    
+    $$(A^T A)\hat{x} = A^T b$$
+    
+    The function calculates this by generating an augmented matrix $[A^T A \mid A^T b]$ and reducing it to Reduced Row Echelon Form (RREF). 
+    * If $A$ has linearly independent columns, it returns the unique particular solution $x_p$.
+    * If $A$ has linearly dependent columns, it computes the null space basis and returns the solution in parametric form: $x = x_p + s_1v_1 + \dots + s_kv_k$.
+    
+    #### Parameters
+    * `A`: The $m \times n$ coefficient matrix.
+    * `b`: The $m \times 1$ column vector representing the right-hand side of the system.
+    
+    #### Returns
+    * `x_gen`: The symbolic general solution (useful for passing into other MATLAB symbolic functions).
+    * `basis`: A matrix where each column is a basis vector $v_i$ for the null space of $A^T A$.
+    * `x_p`: The particular least squares solution vector.
+    
+    ---
+    
+    ### 🛠 Usage Example
+    
+    ```matlab
+    % Instantiate the toolkit
+    tk = MA1508E();
+    
+    % Define an overdetermined system (more equations than unknowns)
+    A = [1,  1; 
+         1, -1; 
+         1,  1];
+         
+    b = [2; 
+         1; 
+         3];
+    
+    % Calculate the Least Squares Solution
+    [x_gen, basis, x_p] = tk.calcLSS(A, b);
+    
+    % The function will automatically print a formatted report to the console:
+    %
+    % ==================================================
+    %                LEAST SQUARES ANALYSIS               
+    % ==================================================
+    % System: (A^T * A)x = A^T * b
+    %
+    % RESULT: Unique Solution Found
+    % --------------------------------------------------
+    % x_lss =
+    % [ 5/2]
+    % [ 1/2]
+    % ==================================================
+    ```
+    </details>
 </details>
 
 ### Chapter 6: Diagonalisation
@@ -204,7 +351,7 @@ The console input parser requires specific formatting. Use the letter `R` follow
 </details>
 
 <details>
-<summary><code>getEigenvector(A, lambda, output)</code></summary>
+<summary><mark><code>getEigenvector(A, lambda, output)</code></mark></summary>
 
 - **`A`**: The matrix corresponding to the differential system.
 - **`lambda`**: An eigenvalue of `A`.
@@ -212,6 +359,64 @@ The console input parser requires specific formatting. Use the letter `R` follow
 - **Description**: Returns the basis for the eigenspace associated to `lambda`.
 - **V2.1 Upgrades**: 
   - **Symbolic Null Space Analysis**: By leveraging the symbolic engine, this method now reliably extracts exact basis vectors even for complex eigenvalues ($\lambda = a \pm bi$) without falling victim to floating-point truncation errors common in standard numerical solvers.
+ 
+    <details>
+    <summary><code>More Information & Example Usage</code></summary>
+
+    ## 📐 Diagonalisation & Eigenspaces
+
+    ### `getEigenvector(obj, A, lambda, output)`
+    
+    This method calculates the exact basis for the eigenspace associated with a specific eigenvalue $\lambda$. It leverages MATLAB's symbolic engine to construct the characteristic matrix, reduce it, and extract the exact parametric solution without floating-point rounding errors.
+    
+    #### Mathematical Logic
+    By definition, an eigenvector $v$ associated with an eigenvalue $\lambda$ satisfies the equation $Av = \lambda v$. This method reorganizes the equation to solve for the null space of the characteristic matrix:
+    
+    $$(\lambda I - A)v = 0$$
+    
+    The method computes the matrix $(\lambda I - A)$, finds its Reduced Row Echelon Form (RREF), and extracts the linearly independent basis vectors (the geometric multiplicity) that span the eigenspace.
+    
+    #### Parameters
+    * `A`: The $n \times n$ square matrix.
+    * `lambda`: The scalar eigenvalue you wish to analyze. *(Note: The method will automatically verify if this is a valid eigenvalue before proceeding).*
+    * `output` *(optional, logical)*: Defaults to `true`. If `true`, the function automatically prints a detailed eigenspace report to the console. Set to `false` if you only want the return variables for use in a larger script.
+    
+    #### Returns
+    * `V`: A matrix where each column is a linearly independent eigenvector forming the basis of the eigenspace.
+    * `genSol`: The generalized, parameterized symbolic solution (e.g., $x = s_1v_1 + s_2v_2$).
+    
+    ---
+    
+    ### 🛠 Usage Example
+    
+    ```matlab
+    % Instantiate the toolkit
+    tk = MA1508E();
+    
+    % Define a 2x2 square matrix
+    A = [4, 1; 
+         3, 2];
+    
+    % Calculate the eigenvector for the known eigenvalue lambda = 5
+    [V, genSol] = tk.getEigenvector(A, 5);
+    
+    % The function will automatically print a formatted report to the console:
+    %
+    % --- Eigenspace Analysis for lambda = 5 ---
+    % Characteristic Matrix (lambda*I - A) reduced to RREF:
+    % [ 1, -1]
+    % [ 0,  0]
+    %
+    % Basis for the Eigenspace:
+    % [ 1]
+    % [ 1]
+    %
+    % Parameterized General Solution (x = s1*v1 + ...):
+    % [ s1]
+    % [ s1]
+    ```
+  
+    </details>
 </details>
 
 <details>
@@ -223,19 +428,126 @@ The console input parser requires specific formatting. Use the letter `R` follow
 </details>
 
 <details>
-<summary><code>getGeneralisedEigenvector(A, lambda)</code></summary>
+<summary><mark><code>getGeneralisedEigenvector(A, lambda)</code></mark></summary>
 
 - **`A`**: The matrix corresponding to the differential system.
 - **`lambda`**: An eigenvalue of `A`.
 - **Description**: Returns the matrix which gives you the valid generalised eigenvector for defective matrices.
+
+  <details>
+  <summary><code>More Information & Usage Example</code></summary>
+  
+  ### `getGeneralisedEigenvector(obj, A, lambda)`
+  
+  This method calculates a **Generalized Eigenvector** (of rank 2) for a defective matrix. This is used when an eigenvalue's algebraic multiplicity is greater than its geometric multiplicity (i.e., there are not enough standard eigenvectors to form a basis for diagonalization).
+  
+  #### Mathematical Logic
+  When a standard eigenvector $v_1$ has already been found for an eigenvalue $\lambda$, a generalized eigenvector $v_2$ is a vector that satisfies the following equation:
+  
+  (A−λI)v2​=v1​
+  
+  The method constructs an augmented matrix by appending $v_1$ to the characteristic matrix: $[ (A - \lambda I) \mid v_1 ]$. It reduces this system to Reduced Row Echelon Form (RREF) and safely extracts a valid generalized eigenvector by automatically setting any free variables to $0$.
+  
+  #### Parameters
+  * `A`: The $n \times n$ square, defective matrix.
+  * `lambda`: The scalar eigenvalue associated with the missing eigenvectors.
+  
+  #### Returns
+  * `v2`: A symbolic column vector representing a valid generalized eigenvector.
+  
+  ---
+  
+  ### 🛠 Usage Example
+  
+  ```matlab
+  % Instantiate the toolkit
+  tk = MA1508E();
+  
+  % Define a defective 2x2 matrix 
+  % (Eigenvalue lambda = 3 has algebraic mult. 2, but geometric mult. 1)
+  A = [ 4, 1; 
+       -1, 2];
+  
+  % Calculate the generalized eigenvector for lambda = 3
+  v2 = tk.getGeneralisedEigenvector(A, 3);
+  
+  % The function will automatically print a formatted report:
+  %
+  % --- Eigenspace Analysis for lambda = 3 ---
+  % Characteristic Matrix (lambda*I - A) reduced to RREF:
+  % [ 1, 1]
+  % [ 0, 0]
+  % Basis for the Eigenspace:
+  % [ -1]
+  % [  1]
+  % Parameterized General Solution (x = s1*v1 + ...):
+  % [ -s1]
+  % [  s1]
+  %
+  % The augmented matrix [M | v1] is reduced to:
+  % [ 1, 1, -1]
+  % [ 0, 0,  0]
+  %
+  % By setting free variables to 0, a valid generalised eigenvector is:
+  % [ -1]
+  % [  0]
+  ```
+
+  </details>
 </details>
 
 ### Chapter 7: System of Linear Differential Equations
 <details>
-<summary><code>generateInitialConditions(n)</code></summary>
+<summary><mark><code>generateInitialConditions(n)</code></mark></summary>
 
 - **`n`**: The number of initial conditions of a differential system.
 - **Description**: Returns formatted string to be input as initial conditions in MATLAB's `dsolve`.
+
+  <details>
+  <summary><code>More Information & Usage Example</code></summary>
+
+  ## 🌀 System of Linear Differential Equations
+  
+  ### `generateInitialConditions(obj, n)`
+  
+  This method is an interactive helper utility used when solving Initial Value Problems (IVPs) for systems of linear differential equations (e.g., $y' = Ay$). It prompts the user in the command window to enter the initial conditions for an $n$-dimensional system and formats the inputs into a string that can be parsed by MATLAB's `dsolve` function.
+  
+  #### Logic
+  When solving a system of ODEs mathematically, you often have starting conditions like $y_1(0) = 5$ and $y_2(0) = -1$. This function uses a loop to ask the user for both the time variable ($t$) and the resulting value ($y_i$) for each equation in the system. 
+  
+  It constructs a string array of logical equations (using the `==` operator) required by MATLAB's symbolic solver, such as: `"[y1(0)==5, y2(0)==-1]"`.
+  
+  #### Parameters
+  * `n`: An integer representing the dimension of the system (the number of variables $y_1, y_2, \dots, y_n$).
+  
+  #### Returns
+  * `s`: A formatted string containing the array of initial conditions. This string is typically passed to the `eval()` function before being fed into `dsolve`.
+  
+  ---
+  
+  ### 🛠 Usage Example
+  
+  ```matlab
+  % Instantiate the toolkit
+  tk = MA1508E();
+  
+  % Generate conditions for a 2D system (y1 and y2)
+  % Note: This will pause script execution to wait for user input
+  cond_string = tk.generateInitialConditions(2);
+  
+  % --- Interactive Console Session ---
+  % Enter the t value for y1: 0
+  % Enter the result of y1(0): 5
+  % Enter the t value for y2: 0
+  % Enter the result of y2(0): -1
+  % -----------------------------------
+  
+  disp("Formatted output string:");
+  disp(cond_string);
+  % Output: "[y1(0)==5, y2(0)==-1]"
+  ```
+
+  </details>
 </details>
 
 <details>
@@ -247,7 +559,7 @@ The console input parser requires specific formatting. Use the letter `R` follow
 </details>
 
 <details>
-<summary><code>plotPhasePortrait(A)</code></summary>
+<summary><mark><code>plotPhasePortrait(A)</code></mark></summary>
   
 Use the `m.plotPhasePortrait(A)` function to instantly visualize the stability of 2x2 differential systems. The thick red lines indicate the exact straight-line solutions (eigenvectors).
 
