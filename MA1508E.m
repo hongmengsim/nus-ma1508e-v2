@@ -5,32 +5,23 @@ classdef MA1508E
     methods
         % Chapter 1: Linear Systems
         function res = isValidERO(~, str)
-            % --- ADDED FOR SPACE FLEXIBILITY ---
-            str = upper(str); % Handle 'r' vs 'R'
-            str = regexprep(str, '\s*([+-])\s*', ' $1 '); % Force space around + or -
-            str = regexprep(str, '\s*S\s*', ' S ');       % Force space around S
-            str = strtrim(str);                           % Clean ends
-            % ------------------------------------
+            % Standardize spaces and case
+            str = upper(str); 
+            str = regexprep(str, '([+-])\s*(R\d)', '$1 $2'); 
+            str = regexprep(str, '\s*([+-])\s*', ' $1 '); 
+            str = regexprep(str, '\s*S\s*', ' S ');       
+            str = strtrim(str);                           
             
-            % Match regular expression, includes floating point coefficient            
-            % ERO Examples:
-            % Add - "R1 + 3R2"; "R4 - 1R2"
-            % Swap - "R2 S R4"
-            % Multiple - "3R1"; "0.25R3"
-            [addStart, addEnd] = regexp(str, "R\d [+-] \d+.?\d*R\d");
-            [swapStart, swapEnd] = regexp(str, "R\d S R\d");
-            [multipleStart, multipleEnd] = regexp(str, "-?\d+.?\d*R\d");
+            % Patterns that allow optional spaces (\s*) after the operators
+            addPattern = "^R\d\s*[+-]\s*[\d./]*\*?R\d$";
+            swapPattern = "^R\d\s*S\s*R\d$";
+            multiplePattern = "^[+-]?\s*[\d./]*\*?R\d$"; % Now allows "- 1/2R2"
             
-            % Check if input string is exactly the length of the match
-            len = strlength(str);
-            isAdd = any(addStart == 1) && ((addEnd - addStart + 1) == len);
-            isSwap = any(swapStart == 1) && ((swapEnd - swapStart + 1) == len);
-            isMultiple = any(multipleStart == 1) && ((multipleEnd - multipleStart + 1) == len);
-            if ~isAdd && ~isSwap && ~isMultiple
-                res = false;
-                return;
-            end
-            res = true;
+            isAdd = ~isempty(regexp(str, addPattern, 'once'));
+            isSwap = ~isempty(regexp(str, swapPattern, 'once'));
+            isMultiple = ~isempty(regexp(str, multiplePattern, 'once'));
+            
+            res = isAdd || isSwap || isMultiple;
         end
         function M = generateElemAdd(~, data)
             M = sym(eye(data.size));
@@ -50,27 +41,61 @@ classdef MA1508E
             M(rightVal, leftVal) = 1;
         end
         function res = generateElemMatrix(obj, str, n)
-            % Process input string
             sp = split(str);
-            [rows, cols] = size(sp);
-            if rows == 1 && cols == 1
-                parts = split(sp(1), "R");
-                coe = str2sym(parts(1));
+            [numParts, ~] = size(sp);
+            
+            % --- UPDATED SCALAR CASE ---
+            % Handles "-1/2R2" (1 part) or "- 1/2R2" (2 parts)
+            if numParts == 1 || (numParts == 2 && (sp(1) == "-" || sp(1) == "+"))
+                if numParts == 2
+                    % If it's "- 1/2R2", combine them back or handle sign
+                    opSign = sp(1);
+                    target = sp(2);
+                else
+                    target = sp(1);
+                    opSign = "+";
+                end
+        
+                parts = split(target, "R");
+                coeStr = strrep(parts(1), '*', '');
+                
+                if coeStr == ""
+                    coe = sym(1);
+                else
+                    coe = str2sym(coeStr);
+                end
+                
+                if opSign == "-", coe = -coe; end
+                
                 val = str2double(parts(2));
                 res = sym(eye(n));
                 res(val, val) = coe;
                 return;
             end
+            
+            % CASE 2: Addition, Subtraction, or Swap (3 parts like "R2 - R1")
             ero = struct('left', zeros(2, 1), 'op', '', 'right', zeros(2, 1), 'size', n);
             
             ero.left = str2double(split(string(sp(1)), "R"));
-            ero.op = char(sp(2)); % This converts the "-" from a string to a character
-            ero.right = str2double(split(string(sp(3)), "R"));
+            ero.op = char(sp(2));
+            
+            % Process the right side (e.g., "1/2R1" or "R1")
+            rightParts = split(string(sp(3)), "R");
+            rightCoeStr = strrep(rightParts(1), '*', '');
+            
+            % Use == "" to correctly identify the "implied 1"
+            if rightCoeStr == ""
+                ero.right(1) = sym(1);
+            else
+                ero.right(1) = str2sym(rightCoeStr);
+            end
+            ero.right(2) = str2double(rightParts(2));
             
             switch ero.op
                 case '+'
                     res = obj.generateElemAdd(ero);
                 case '-'
+                    % Multiply by -1 and treat as addition
                     ero.right(1) = -ero.right(1);
                     res = obj.generateElemAdd(ero);
                 case 'S'
@@ -93,9 +118,12 @@ classdef MA1508E
                 
                 % --- SANITIZATION START ---
                 command = upper(command); 
+                % Fix R2-R1 to R2 - R1
+                command = regexprep(command, '([+-])\s*(R\d)', '$1 $2'); 
+                % Force single spaces
                 command = regexprep(command, '\s*([+-])\s*', ' $1 '); 
                 command = regexprep(command, '\s*S\s*', ' S ');      
-                command = strtrim(command);                          
+                command = strtrim(command);                 
                 % --- SANITIZATION END ---
                 
                 if ~obj.isValidERO(command)
@@ -215,65 +243,72 @@ classdef MA1508E
             b = A * inv(A'*A) * A' * u;
         end
         
-        function [u,r] = gramSchmidt(obj, v, showSteps)
-            arguments
-                obj;
-                v;
-                showSteps logical = true; 
+        function [e, r] = gramSchmidt(obj, v, showSteps)
+            % Set default for showSteps if not provided
+            if nargin < 3
+                showSteps = true;
             end
             
             [M, N] = size(v);
-            
-            % FIX 1: Force the container to be symbolic so it can't convert to decimals
-            u = sym(zeros(M, N)); 
-            r = sym(eye(N)); 
-            
-            u(:,1) = v(:,1);
+            v_sym = sym(v);        % Force symbolic for exact surds
+            e = sym(zeros(M, N));  % Orthonormal vectors (Q matrix)
+            r = sym(zeros(N, N));  % Upper triangular coefficients (R matrix)
             
             if showSteps
-                fprintf("\n--- Gram-Schmidt Step-by-Step ---\n");
-                fprintf("Step 1: u_1 is simply the first vector v_1\n");
-                disp(u(:,1));
+                fprintf("\n==================================================\n");
+                fprintf("       GRAM-SCHMIDT ORTHONORMALIZATION        \n");
+                fprintf("==================================================\n");
             end
-            
-            for n = 2:N
-                acu = sym(zeros(M, 1)); 
+        
+            for j = 1:N
+                % Start with the original vector v_j
+                temp_u = v_sym(:, j);
                 
                 if showSteps
-                    fprintf("\nStep %d: Calculating u_%d\n", n, n);
-                    fprintf("Formula: u_%d = v_%d", n, n);
-                    for m = 1:n-1
-                        fprintf(" - proj_u%d(v_%d)", m, n);
-                    end
-                    fprintf("\n");
+                    fprintf("\nStep %d: Processing Input Vector v_%d\n", j, j);
+                    disp(v_sym(:, j));
                 end
-                
-                for m = 1:n-1
-                    num = dot(v(:,n),u(:,m)); 
-                    den = dot(u(:,m),u(:,m)); 
-                    r(n,m) = num/den;
-                    acu = acu + r(n,m)*u(:,m);
+        
+                % 1. Orthogonalization (Subtract projections onto previous e vectors)
+                for i = 1:j-1
+                    % Calculate R_ij (projection of original v_j onto current e_i)
+                    % This must be done using the orthonormal vectors for V = QR
+                    r(i, j) = simplify(dot(e(:, i), v_sym(:, j)));
+                    
+                    % Subtract the projection component
+                    temp_u = temp_u - (r(i, j) * e(:, i));
                     
                     if showSteps
-                        fprintf("  > Projection of v_%d onto u_%d:\n", n, m);
-                        % FIX 2: Use string() instead of char() to stop ASCII conversion
-                        fprintf("    Inner product <v_%d, u_%d> = %s\n", n, m, string(num));
-                        fprintf("    Inner product <u_%d, u_%d> = %s\n", m, m, string(den));
-                        fprintf("    Projection vector:\n");
-                        disp(r(n,m)*u(:,m));
+                        fprintf("  > Projection onto orthonormal e_%d:\n", i);
+                        fprintf("    Coefficient R(%d,%d) = <e_%d, v_%d> = %s\n", i, j, i, j, string(r(i,j)));
                     end
                 end
                 
-             u(:,n) = v(:,n) - acu;
-             
-             if showSteps
-                 fprintf("  > Resulting orthogonal vector u_%d:\n", n);
-                 disp(u(:,n));
-             end
+                % 2. Calculate the norm of the remaining orthogonal vector
+                u_orth = simplify(temp_u);
+                mag = simplify(sqrt(dot(u_orth, u_orth)));
+                r(j, j) = mag; % This is the diagonal of the R matrix
+                
+                % 3. Normalization (Generating the Orthonormal basis)
+                if mag ~= 0
+                    e(:, j) = simplify(u_orth / mag);
+                    
+                    if showSteps
+                        fprintf("  > Resulting Orthogonal Vector u_%d:\n", j);
+                        disp(u_orth);
+                        fprintf("  > Normalizing... Magnitude ||u_%d|| = %s\n", j, string(mag));
+                        fprintf("  > Final Orthonormal Vector e_%d (Surd Form):\n", j);
+                        disp(e(:, j));
+                    end
+                else
+                    % Handle cases where vectors are linearly dependent
+                    fprintf("  > Warning: Vector v_%d is linearly dependent. Result is 0.\n", j);
+                    e(:, j) = sym(zeros(M, 1));
+                end
             end
             
             if showSteps
-                fprintf("--- End of Process ---\n\n");
+                fprintf("==================================================\n\n");
             end
         end
 
@@ -297,31 +332,82 @@ classdef MA1508E
             disp(orthoBasis);
         end
         
-        function res = calcLSS(~, A, b)
-            [rowsA, ~] = size(A);
-            [rowsB, ~] = size(b);
-            if rowsA ~= rowsB
-                fprintf("Error: Inputs need to have the same number of rows!\n");
-                return;
-            end
-            % Calculate least squares solution of Ax = b
-            left = A' * A;
-            right = A' * b;
-            R = rref([left right]);
-            [~, cols] = size(R);
-            v = R(:, cols);
-            p = null(R(:, 1:cols - 1), "r");
+        function [x_gen, basis, x_p] = calcLSS(obj, A, b)
+            % 1. Symbolic Conversion
+            A_sym = sym(A);
+            b_sym = sym(b);
+            [rowsA, colsA] = size(A_sym);
+        
+            % 2. Form Normal Equations 
+            % Using transpose() instead of ' to avoid "Invalid use of operator"
+            left = transpose(A_sym) * A_sym;
+            right = transpose(A_sym) * b_sym;
             
-            param = 's';
-            fprintf("The general solution has parameters ");
-            [~, numP] = size(p);
-            for i = 1:numP
-                fprintf("%c, ", param);
-                param = char(param + 1);
+            % 3. Solve via RREF
+            Aug = [left, right];
+            R = rref(Aug);
+            
+            % 4. Extract Particular Solution (x_p)
+            x_p = sym(zeros(colsA, 1));
+            [numRows, ~] = size(R);
+            pivotCount = 1;
+            for j = 1:colsA
+                if pivotCount <= numRows && R(pivotCount, j) == 1
+                    x_p(j) = R(pivotCount, end);
+                    pivotCount = pivotCount + 1;
+                end
             end
-            fprintf("from columns %i to %i", 2, 1 + numP);
-           
-            res = [v p];
+        
+            % 5. Homogeneous Solution (Null Space)
+            basis = null(left);
+            [~, k] = size(basis);
+        
+            % 6. Simplify Building Blocks
+            x_p = simplify(x_p);
+            basis = simplify(basis);
+            
+            % 7. Generate x_gen for return (not for display)
+            if k > 0
+                % Create s_vars as a column vector to avoid transpose operator
+                s_vars = sym('s', [k, 1], 'real');
+                x_gen = simplify(x_p + (basis * s_vars));
+            else
+                x_gen = x_p;
+            end
+        
+            % --- FINAL BEAUTIFIED OUTPUT ---
+            fprintf('\n==================================================\n');
+            fprintf('             LEAST SQUARES ANALYSIS               \n');
+            fprintf('==================================================\n');
+            fprintf('System: (A^T * A)x = A^T * b\n');
+        
+            if k == 0
+                fprintf('\nRESULT: Unique Solution Found\n');
+                fprintf('--------------------------------------------------\n');
+                fprintf('x_lss =\n');
+                disp(x_p);
+            else
+                fprintf('\nRESULT: Infinite Solutions (Parametric Form)\n');
+                fprintf('--------------------------------------------------\n');
+                fprintf('Particular Solution (x_p):\n');
+                disp(x_p);
+                
+                fprintf('Null Space Basis (v_i):\n');
+                for i = 1:k
+                    fprintf('  Vector v%d:\n', i);
+                    disp(basis(:, i));
+                end
+                
+                fprintf('--------------------------------------------------\n');
+                fprintf('Parametric Equation:\n');
+                fprintf('  x = x_p');
+                % Loop-based printing avoids all string concatenation errors
+                for i = 1:k
+                    fprintf(' + s%d*v%d', i, i);
+                end
+                fprintf('\n');
+            end
+            fprintf('==================================================\n\n');
         end
         
         % Chapter 6: Diagonalisation
@@ -363,13 +449,14 @@ classdef MA1508E
             res = valid;
         end
         
-        function v1 = getEigenvector(obj, A, lambda, output)
+        function [V, genSol] = getEigenvector(obj, A, lambda, output)
             arguments
                 obj;
-                A; % FIXED: Removed 'double' to allow symbolic matrices
-                lambda; % FIXED: Removed 'double' to allow symbolic eigenvalues
+                A; 
+                lambda; 
                 output logical = true;
             end
+            
             [rows, cols] = size(A);
             if rows ~= cols
                 fprintf("Input matrix is not square!\n");
@@ -379,14 +466,27 @@ classdef MA1508E
                 return;
             end
             
-            M = lambda * sym(eye(cols)) - sym(A); % FIXED: Added sym() for exact tracking
-            v1 = null(M);
+            % 1. Construct the characteristic matrix (lambda*I - A)
+            M = lambda * sym(eye(cols)) - sym(A); 
+            
+            % 2. Get the 'Rational' Basis (matches RREF manual working)
+            V = null(M); 
+            [~, k] = size(V); % k is the geometric multiplicity
+            
+            % 3. Generate the general solution: x = s1*v1 + s2*v2...
+            s = sym('s', [1 k], 'real'); % Creates s1, s2, ... sk
+            genSol = V * s';      % Matrix-vector multiplication for the general form
+            
             if output
-                fprintf("The matrix\n");
-                disp(M);
-                fprintf("is reduced to\n")
+                fprintf("\n--- Eigenspace Analysis for lambda = %s ---\n", string(lambda));
+                fprintf("Characteristic Matrix (lambda*I - A) reduced to RREF:\n");
                 disp(rref(M));
-                fprintf("Hence the basis for the eigenspace associated with %i is", lambda);
+                
+                fprintf("Basis for the Eigenspace:\n");
+                disp(V);
+                
+                fprintf("Parameterized General Solution (x = s1*v1 + ...):\n");
+                disp(genSol);
             end
         end
         
