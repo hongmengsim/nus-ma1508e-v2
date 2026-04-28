@@ -1,84 +1,78 @@
-# MATLAB for Linear Algebra
+# MATLAB for Linear Algebra (V2)
+
+## What's New in V2
+This toolkit has been upgraded for the AY25/26 semester to prioritize mathematical accuracy and ease of use for NUS Engineering students.
+* **Symbolic Math Integration:** Methods now natively support and return `sym` objects, providing exact fractional results (e.g., `1/3`) instead of messy floating-point decimals.
+* **Step-by-Step Outputs:** Functions like `gramSchmidt` now provide the exact algebraic working, intermediate projections, and inner products for exam verification.
+* **Subspace Extraction:** Added a new utility to automatically find a linearly independent basis for the span of any given set of vectors.
+* **Chapter 7 Visualizer:** Added a Phase Portrait plotter to easily identify Sinks, Sources, Saddles, and Spirals geometrically.
 
 ## Setup 
+*Note: This toolkit requires the **Symbolic Math Toolbox** to be installed in your MATLAB Add-Ons.*
 
 ```sh
-git clone https://github.com/jinxuan-owyong/nus-ma1508e.git
-cd nus-ma1508e
-matlab MA1508E.m
+git clone https://github.com/hongmengsim/nus-ma1508e-v2.git
+cd nus-ma1508e-v2
 ```
-
-## Usage
-
-Initialise class instance:
-
-  ```MATLAB
-  m = MA1508E();
-  ```
-
-Call the desired [method](#methods)
-
-  ``` MATLAB
-  m.leftInverse(A);
-  ```
-  
-**Example**
-
-$$S = \begin{Bmatrix} \begin{pmatrix} 1 \\\ 1 \\\ 1 \end{pmatrix},\begin{pmatrix} 0 \\\ 1 \\\ -1 \end{pmatrix},\begin{pmatrix} -2 \\\ 1 \\\ 1 \end{pmatrix}\end{Bmatrix}$$
-
-To check if a set of vectors S is orthogonal
-
-Input:
-
+Usage
+Initialise the class instance in your Command Window:
 ```MATLAB
-A = [1 0 -2; 1 1 1; 1 -1 1];
+m = MA1508E();
+```
+To ensure exact fractional outputs, it is highly recommended to pass your matrices as symbolic objects using the `sym()` function:
+```MATLAB
+A = sym([1 0 -2; 1 1 1; 1 -1 1]);
+m.getPD(A);
+```
+**Example Verification**
+
+$$
+S = \begin{Bmatrix} 
+\begin{pmatrix} 1 \cr 1 \cr 1 \end{pmatrix}, 
+\begin{pmatrix} 0 \cr 1 \cr -1 \end{pmatrix}, 
+\begin{pmatrix} -2 \cr 1 \cr 1 \end{pmatrix} 
+\end{Bmatrix}
+$$
+
+To check if the set of vectors S is orthogonal:
+```MATLAB
+A = sym([1 0 -2; 1 1 1; 1 -1 1]);
 m.isOrthogonalSet(A);
 ```
-
 Output:
-
+```MATLAB
+  The set is othogonal
 ```
-The set is orthogonal
+---
+
+## 📈 Chapter 7 Phase Portrait Gallery
+
+Use the `m.plotPhasePortrait(A)` function to instantly visualize the stability of 2x2 differential systems. The thick red lines indicate the exact straight-line solutions (eigenvectors).
+
+### 1. The Saddle Point (Unstable)
+One positive eigenvalue, one negative eigenvalue. The arrows flow inward along one eigenvector and outward along the other.
+```MATLAB
+A = sym([1 2; 2 1]);
+m.plotPhasePortrait(A);
 ```
+### 2. The Sink / Stable Node
 
-## Methods
+Both eigenvalues are negative. All trajectories are pulled directly into the origin over time.
+```MATLAB
+A = sym([-2 1; 1 -2]);
+m.plotPhasePortrait(A);
+```
+### 3. The Source / Unstable Node
 
-**Chapter 1: Linear Systems**
-| Method                                    | Parameters                                                                                                                                      | Description                                                                                                                                                                                                                  |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `isValidERO`                              | `str` - String containing the elementary row operation                                                                                          | Returns true if `str` follows the required syntax, false otherwise                                                                                                                                                           |
-| `generateElemAdd`<br />`generateElemSwap` | `data` - Struct containing the elementary row operation                                                                                         | Returns the elementary matrix corresponding to the elementary row operation                                                                                                                                                  |
-| `generateElemMatrix`                      | `str` - Elementary row operation to be performed<br />(Example: R2 + 0.5R3, 3R1, R4 - 1R2, R2 S R3)<br />`n` - The number of rows of the matrix | Returns an elementary matrix, which can be pre-multiplied to a matrix to perform an elementary row operation<br />`>> A = m.generateElemMatrix("R2 - 1R1", 4) * A`                                                           |
-| `performERO`                              | `A` - The matrix to perform elementary row operations on                                                                                        | While loop takes input from console and validates string. Input must be placed between quotation marks "":<br />`>> Enter the elementary row operation: "R1 S R2"`<br />Matrix is printed after each operation is performed. |
+Both eigenvalues are positive. All trajectories are pushed outward and away from the origin.
+```MATLAB
+A = sym([2 1; 1 2]);
+m.plotPhasePortrait(A);
+```
+### 4. The Spiral
 
-**Chapter 2: Matrices**
-| Method         | Parameters                  | Description                                                                               |
-| -------------- | --------------------------- | ----------------------------------------------------------------------------------------- |
-| `leftInverse`  | `A` - m x n matrix to check | Returns left inverse of A if it exists<br />Condition: m > n for left inverse to exist.   |
-| `rightInverse` | `A` - m x n matrix to check | Returns right inverse of A if it exists<br />Condition: m < n for right inverse to exist. |
-
-**Chapter 5: Orthogonal Projection**
-| Method             | Parameters                                                                                       | Description                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| `isOrthogonalSet`  | `S` - Set of vectors in matrix form                                                              | Prints whether a set is orthogonal                                             |
-| `isOrthonormalSet` | `S` - Set of vectors in matrix form                                                              | Prints whether a set is orthonormal                                            |
-| `isOrthogonalTo`   | `S` - Set of vectors in matrix form<br />`target` - The vector to be checked                     | Prints whether `target` is orthogonal to the set `S`                           |
-| `toOrthonormalSet` | `OG` - Orthogonal set of vectors in matrix form                                                  | Normalises the set of vectors, returns `ON`, the corresponding orthonormal set |
-| `dotWithSet`       | `S` - Set of vectors in matrix form<br />`v` - Column vector pith the same number of rows as `S` | Returns the dot product between each column of `S` and `v`                     |
-| `orthogonalProj`   | `S` - Set of vectors in matrix form<br />`w` - The vector to be projected                        | Returns the orthogonal projection of `w` onto the span of `S`                  |
-| `gramSchmidt`      | `v` - The basis to be converted into an orthonormal basis                                        | `u` - The corresponding orthonormal basis<br /> `r` - Not in use               |
-| `calcLSS`          | `A` - The matrix to calculate the least squares solution<br />`b` - The column vector            | Returns the general least square solution to Ax = b                            |
-
-**Chapter 6: Diagonalisation**
-| Method                      | Parameters                                                                                                                                                       | Description                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `getEigenvalues`            | `A` - The matrix corresponding to the differential system                                                                                                        | Returns both real and complex eigenvalues corresponding to `A`             |
-| `getEigenvector`            | `A` - The matrix corresponding to the differential system<br />`lambda` - An eigenvalue of `A`<br />`output` - Show steps to obtain eigenvector (Default = true) | Returns the basis for the eigenspace associated to `lambda`                |
-| `isAssociatedEigenvalue`    | `A` - The matrix corresponding to the differential system<br />`lambda` - Eigenvalue to verify                                                                   | Returns true if lambda is an eigenvalue associated to `A`, false otherwise |
-| `getGeneralisedEigenvector` | `A` - The matrix corresponding to the differential system<br />`lambda` - An eigenvalue of `A`                                                                   | Returns the matrix which gives you the generalised eigenvector             |
-
-**Chapter 7: System of Linear Differential Equations**
-| Method                      | Parameters                                                                                                                                                                          | Description                                                  |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `generateInitialConditions` | `n` - The number of initial conditions of a differential system                                                                                                                     | Returns string to be input as initial conditions in `dsolve` |
-| `solveDifferentialSystem`   | `A` - The matrix corresponding to the differential system<br />`isInitial` - Boolean, `false` to obtain general solution of the differential system, `true` for particular solution | Returns a struct containing the solution                     |
+Complex eigenvalues (λ=a±bi). If the real part a is negative, it spirals inward (Stable). If a is positive, it spirals outward (Unstable).
+```MATLAB
+A = sym([-1 1; -5 -1]);
+m.plotPhasePortrait(A);
+```
