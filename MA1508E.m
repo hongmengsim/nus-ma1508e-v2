@@ -54,9 +54,9 @@ classdef MA1508E
             sp = split(str);
             [rows, cols] = size(sp);
             if rows == 1 && cols == 1
-                data = str2double(split(sp(1), "R"));
-                coe = data(1);
-                val = data(2);
+                parts = split(sp(1), "R");
+                coe = str2sym(parts(1));
+                val = str2double(parts(2));
                 res = sym(eye(n));
                 res(val, val) = coe;
                 return;
