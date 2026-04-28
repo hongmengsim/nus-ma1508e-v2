@@ -6,6 +6,8 @@ This toolkit has been upgraded for the AY25/26 semester to prioritize mathematic
 * **Step-by-Step Outputs:** Functions like `gramSchmidt` now provide the exact algebraic working, intermediate projections, and inner products for exam verification.
 * **Subspace Extraction:** Added a new utility to automatically find a linearly independent basis for the span of any given set of vectors.
 * **Chapter 7 Visualizer:** Added a Phase Portrait plotter to easily identify Sinks, Sources, Saddles, and Spirals geometrically.
+* **Rigorous QR Decomposition:** Upgraded `gramSchmidt` to the Modified Gram-Schmidt algorithm, ensuring the $R$ matrix is strictly upper-triangular and $V = QR$ reconstruction is successful.
+* **Parametric LSS Solver:** The Least Squares solver now identifies infinite solution spaces and formats them as $\mathbf{x} = \mathbf{x}_p + s_1 \mathbf{v}_1 + \dots$
 
 ## Setup 
 *Note: This toolkit requires the **Symbolic Math Toolbox** to be installed in your MATLAB Add-Ons.*
@@ -47,12 +49,22 @@ Output:
 ## 📚 Detailed API Reference
 Click on any method below to expand its full documentation, parameters, and conditions.
 
+## ✅ How to Verify Your Results
+The V2.1 engine is designed for easy verification. Run these checks in your Command Window:
+
+1. **Check Orthonormality:** `simplify(e' * e)` should yield the **Identity Matrix**.
+2. **Check QR Reconstruction:** `simplify(e * r)` should yield your original matrix **V**.
+3. **Check LSS Accuracy:** `simplify(transpose(A) * (b - A*x_p))` should yield a **Zero Vector**.
+
 ### Chapter 1: Linear Systems
 <details>
 <summary><code>isValidERO(str)</code></summary>
 
 - **`str`**: String containing the elementary row operation.
-- **Description**: Returns `true` if `str` follows the required syntax, `false` otherwise.
+- **Description**: Validates the syntax of an ERO string.
+- **V2.1 Upgrades**: 
+  - **Space-Insensitive**: The parser now accepts both standard (`R2 + 2R1`) and compact (`R2+2R1`) formats for faster input during timed labs.
+  - **Rules**: Row prefixes must remain an uppercase **R**. Supports exact fractions (e.g., `1/2R1`).
 </details>
 
 <details>
@@ -65,9 +77,10 @@ Click on any method below to expand its full documentation, parameters, and cond
 <details>
 <summary><code>generateElemMatrix(str, n)</code></summary>
 
-- **`str`**: Elementary row operation to be performed (Example: `R2 + 0.5R3`, `3R1`, `R4 - 1R2`, `R2 S R3`).
-- **`n`**: The number of rows of the matrix.
-- **Description**: Returns an elementary matrix, which can be pre-multiplied to a matrix to perform an elementary row operation.
+- **`str`**: Elementary row operation to be performed (e.g., `R2+0.5R3`, `3R1`, `R4-1R2`, `R2SR3`).
+- **`n`**: The number of rows of the target matrix.
+- **Description**: Generates the corresponding elementary matrix used to perform the row operation via pre-multiplication.
+- **V2.1 Upgrades**: Fully supports space-insensitive strings and seamlessly parses symbolic fractions into exact matrix elements.
 </details>
 
 <details>
@@ -76,20 +89,23 @@ Click on any method below to expand its full documentation, parameters, and cond
 ### `performERO(A)`
 **Description:** Launches an interactive, step-by-step console loop that allows the user to apply Elementary Row Operations (EROs) to a given matrix. The matrix is updated and printed to the console after every successful operation. Type `exit` or `quit` to break the loop.
 
-> **Note for V2:** Input strings no longer require quotation marks in the console. Furthermore, passing a symbolic matrix (`sym()`) ensures all intermediate fractions remain exact.
+> **Note for V2:**
+  - Input strings no longer require quotation marks in the console. Furthermore, passing a symbolic matrix (`sym()`) ensures all intermediate fractions remain exact.
+  - Now utilizes the space-insensitive parser for rapid data entry. 
+  - **Tip:** Pass your matrix as `A = sym(A)` before running this method to ensure all intermediate row additions and scalar multiplications remain in exact fractional form instead of decimals.
 
 #### **Parameters**
 - **`A`** *(Matrix | sym)*: The target matrix you want to perform operations on. 
 
 #### **Supported Operation Syntax**
-The console input parser requires specific formatting. Use the letter `R` followed by the row number. **Spaces are required** between terms for addition and swapping.
+The console input parser requires specific formatting. Use the letter `R` followed by the row number.
 
 | Operation Type | Syntax | Description | Example |
 | :--- | :--- | :--- | :--- |
 | **Row Swapping** | `Ri S Rj` | Swaps Row *i* with Row *j* | `R1 S R2` |
 | **Scalar Multiplication** | `cRi` | Multiplies Row *i* by a scalar value *c* | `3R1` or `1/2R3` |
 | **Row Addition** | `Rj + cRi` | Adds *c* times Row *i* to Row *j* | `R2 + 2R1` |
-| **Row Subtraction** | `Rj - cRi` | Subtracts *c* times Row *i* from Row *j* | `R4 - 1R2` |
+| **Row Subtraction** | `Rj - cRi` | Subtracts *c* times Row *i* from Row *j* | `R4 - R2` |
 
 #### **Example Usage Session**
 
@@ -160,9 +176,12 @@ The console input parser requires specific formatting. Use the letter `R` follow
 <details>
 <summary><code>gramSchmidt(v, showSteps)</code></summary>
 
-- **`v`**: The basis to be converted into an orthogonal basis.
+- **`v`**: The basis to be converted into an orthonormal basis.
 - **`showSteps`**: Boolean (Default = `true`). Set to false to hide algebraic working.
-- **Description**: Returns `[u, r]`, where `u` is the corresponding orthogonal basis and `r` is the projection matrix.
+- **Description**: Performs **Modified Gram-Schmidt** orthonormalization.
+- **V2.1 Upgrades**:
+  - **Surd Support**: Returns exact symbolic square roots (e.g., $\frac{\sqrt{6}}{3}$) instead of decimal approximations.
+  - **QR Decomposition**: Returns `[e, r]` where `e` is the orthonormal $Q$ matrix and `r` is the upper-triangular $R$ matrix. Guaranteed to satisfy $V = QR$ and $Q^T Q = I$.
 </details>
 
 <details>
@@ -170,7 +189,10 @@ The console input parser requires specific formatting. Use the letter `R` follow
 
 - **`A`**: The matrix to calculate the least squares solution.
 - **`b`**: The column vector.
-- **Description**: Returns the general least square solution to $A\mathbf{x} = \mathbf{b}$.
+- **Description**: Solves the Normal Equations $(A^T A)\mathbf{x} = A^T \mathbf{b}$ symbolically.
+- **V2.1 Upgrades**:
+  - **Parametric Vector Form**: If the system is underdetermined (infinite solutions), the output automatically identifies the null space and formats the general solution as a geometric translation: $\mathbf{x} = \mathbf{x}_p + s_1 \mathbf{v}_1 + \dots$
+  - Returns `[x_gen, basis, x_p]` for immediate workspace use.
 </details>
 
 ### Chapter 6: Diagonalisation
@@ -186,8 +208,10 @@ The console input parser requires specific formatting. Use the letter `R` follow
 
 - **`A`**: The matrix corresponding to the differential system.
 - **`lambda`**: An eigenvalue of `A`.
-- **`output`**: Show steps to obtain eigenvector (Default = `true`).
+- **`output`**: Boolean (Default = `true`). Show steps to obtain the eigenvector.
 - **Description**: Returns the basis for the eigenspace associated to `lambda`.
+- **V2.1 Upgrades**: 
+  - **Symbolic Null Space Analysis**: By leveraging the symbolic engine, this method now reliably extracts exact basis vectors even for complex eigenvalues ($\lambda = a \pm bi$) without falling victim to floating-point truncation errors common in standard numerical solvers.
 </details>
 
 <details>
