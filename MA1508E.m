@@ -5,6 +5,13 @@ classdef MA1508E
     methods
         % Chapter 1: Linear Systems
         function res = isValidERO(~, str)
+            % --- ADDED FOR SPACE FLEXIBILITY ---
+            str = upper(str); % Handle 'r' vs 'R'
+            str = regexprep(str, '\s*([+-])\s*', ' $1 '); % Force space around + or -
+            str = regexprep(str, '\s*S\s*', ' S ');       % Force space around S
+            str = strtrim(str);                           % Clean ends
+            % ------------------------------------
+            
             % Match regular expression, includes floating point coefficient            
             % ERO Examples:
             % Add - "R1 + 3R2"; "R4 - 1R2"
@@ -77,16 +84,25 @@ classdef MA1508E
             M = A;
             command = "";
             while true
-                command = input("Enter the elementary row operation: ", 's'); % 's' forces string input
-                if command == "quit"
+                command = input("Enter the elementary row operation: ", 's'); 
+                
+                if command == "quit" || command == "exit"
                     res = M;
                     return;
                 end
+                
+                % --- SANITIZATION START ---
+                command = upper(command); 
+                command = regexprep(command, '\s*([+-])\s*', ' $1 '); 
+                command = regexprep(command, '\s*S\s*', ' S ');      
+                command = strtrim(command);                          
+                % --- SANITIZATION END ---
                 
                 if ~obj.isValidERO(command)
                     fprintf("Invalid ERO.\n");
                     continue;
                 end
+                
                 M = obj.generateElemMatrix(command, rows) * M;
                 fprintf("--> %s:\n\n", command);
                 disp(M);
