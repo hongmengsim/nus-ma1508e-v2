@@ -522,50 +522,86 @@ classdef MA1508E
         end
 
         % Chapter 7: System of Linear Differential Equations
-        function s = generateInitialConditions(~, n)
-            conds = zeros(n, 2);
+        function y0 = generateInitialConditions(obj, n)
+            % Prompts user for initial values at t=0 and returns a column vector
+            fprintf('\n--- Entering Initial Conditions for y(0) ---\n');
+            y0 = sym(zeros(n, 1)); 
             for i = 1:n
-                fprintf("Enter the t value for y%i: ", i);
-                conds(i, 1) = input("");
-                fprintf("Enter the result of y%i(%i): ", i, conds(i, 1));
-                conds(i, 2) = input("");
+                val = input(sprintf('  Enter value for y%i(0): ', i));
+                y0(i) = sym(val);
             end
-            
-            s = "[";
-            for i = 1:n
-                s = s + "y" + i + "(" + conds(i, 1) + ")==" + conds(i, 2);
-                if i ~= n
-                    s = s + ", ";
-                end
-            end
-            s = s + "]";
         end
         
         function res = solveDifferentialSystem(obj, A, isInitial)
-            [rows, ~] = size(A);
-            switch rows
-                case 2
-                    syms y1(t) y2(t);
-                    y = [y1; y2];
-                case 3
-                    syms y1(t) y2(t) y3(t);
-                    y = [y1; y2; y3];
-                case 4
-                    syms y1(t) y2(t) y3(t) y4(t);
-                    y = [y1; y2; y3; y4];
-                case 5
-                    syms y1(t) y2(t) y3(t) y4(t) y5(t);
-                    y = [y1; y2; y3; y4; y5];
-                otherwise
-                    fprintf("Unsupported size.\n");
-                    return;
+            % Solves systems of linear ODEs: y' = Ay
+            arguments
+                obj;
+                A;
+                isInitial logical = false;
             end
+
+            [n, ~] = size(A);
+            syms t;
+            
+            % Step 1: Characteristic Analysis (Eigenvalues)
+            evals = eig(sym(A));
+            
+            % Step 2: Create array of symbolic functions
+            y = sym(zeros(n, 1)); 
+            for i = 1:n
+                % Create symfun in workspace and store in array
+                eval(sprintf('syms y%d(t)', i));
+                eval(sprintf('y(i) = y%d;', i));
+            end
+            
+            % Step 3: Define the ODE system (y' = Ay)
+            ode = diff(y, t) == A * y;
+
             if ~isInitial
-                res = dsolve(diff(y,t) == A * y);
+                % Solve for the General Solution
+                res = dsolve(ode);
             else
-                conds = eval(obj.generateInitialConditions(rows));
-                res = dsolve(diff(y,t) == A * y, conds);
+                % Interactive step for y0 vector
+                y0_vec = obj.generateInitialConditions(n);
+                
+                % FIX: Call y1(0), y2(0) directly from workspace using eval
+                % This bypasses MATLAB's habit of breaking functions inside arrays
+                conds = [];
+                for i = 1:n
+                    y_at_zero = eval(sprintf('y%d(0)', i)); 
+                    conds = [conds, y_at_zero == y0_vec(i)];
+                end
+                
+                % Solve the Initial Value Problem
+                res = dsolve(ode, conds);
             end
+
+            % --- ORGANIZED WORKFLOW OUTPUT ---
+            fprintf('\n==================================================\n');
+            fprintf('        SYSTEM ANALYSIS: y'' = Ay\n');
+            fprintf('==================================================\n');
+            
+            fprintf('1. EIGENVALUES (λ):\n');
+            disp(evals);
+            fprintf('--------------------------------------------------\n');
+
+            fprintf('2. ANALYTICAL SOLUTION:\n');
+            
+            % Handle structure return from dsolve
+            if isstruct(res)
+                sol_fields = fieldnames(res);
+                for i = 1:length(sol_fields)
+                    fprintf('  ➜ %s(t) = \n', sol_fields{i});
+                    disp(res.(sol_fields{i}));
+                    if i < length(sol_fields)
+                        fprintf('  \n');
+                    end
+                end
+            else
+                % Fallback for 1x1 systems or single variables
+                disp(res);
+            end
+            fprintf('==================================================\n\n');
         end
 
         % --- Power User Functions ---
