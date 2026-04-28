@@ -163,6 +163,98 @@ The console input parser requires specific formatting. Use the letter `R` follow
 - **Condition**: $m < n$ for right inverse to exist.
 </details>
 
+### Chapter 3: Vector Spaces & Change of Basis
+
+<details>
+<summary><code>isBasis(V)</code></summary>
+
+### Evaluates if a given set of column vectors forms a valid basis for $\mathbb{R}^n$.
+
+#### Parameters
+* **`V`**: A matrix where each column represents a vector in the set.
+
+#### 🛠 Usage Example
+```matlab
+% Check if these two vectors form a basis in R^2
+B = [1, 2; 
+     0, 1];
+tk.isBasis(B);
+% Output: [v] Check Passed: Set is a valid basis.
+```
+</details>
+
+<details>
+<summary><code>getTransitionMatrix(B, C)</code></summary>
+
+### Calculates the transition matrix $P_{C \leftarrow B}$ (also written as $[I]_{C,B}$) which translates coordinates from Basis $B$ to Basis $C$.
+
+#### Parameters
+* **`B`**: The starting basis matrix (columns are basis vectors).
+* **`C`**: The target basis matrix (columns are basis vectors).
+
+> [!TIP]
+> **The Orthogonal Shortcut:** If you know both matrices are orthogonal (e.g., standard bases or rotation matrices), you do not need to calculate an inverse manually in an exam. The transition matrix is simply $C^T B$. You can use this function to verify that shortcut!
+
+#### 🛠 Usage Example
+```matlab
+E = [1, 0; 0, 1]; % Standard Basis
+B = [2, 1; -1, 3]; % Custom Basis
+
+% Find the transition matrix from Standard (E) to Custom (B)
+P = tk.getTransitionMatrix(E, B);
+```
+</details>
+
+<details>
+<summary><code>changeVectorBasis(v_B, B, C)</code></summary>
+
+### Converts the coordinates of a specific physical vector from one basis to another using the relation $[v]_C = P_{C \leftarrow B} [v]_B$.
+
+#### Parameters
+* **`v_B`**: The coordinate vector relative to Basis $B$.
+* **`B`**: The starting basis matrix.
+* **`C`**: The target basis matrix.
+
+#### 🛠 Usage Example
+```matlab
+E = [1, 0; 0, 1];
+B = [2, 1; -1, 3];
+v_E = [5; 5]; % Vector in standard coordinates
+
+% Translate v_E into coordinates for Basis B
+v_B = tk.changeVectorBasis(v_E, E, B);
+% Output: [10/7; 15/7]
+```
+</details>
+
+<details>
+<summary><code>similarityTransform(A_B, B, C)</code></summary>
+
+### Converts a linear transformation matrix $A$ defined in Basis $B$ into its equivalent representation in Basis $C$. This uses the relation $[T]_C = P^{-1} [T]_B P$.
+
+> [!NOTE]
+> **Pre-cursor to Chapter 6:** If $A$ is a standard transformation matrix, and $C$ is a matrix of its eigenvectors, this function will return a purely diagonal matrix of its eigenvalues. This is the exact mechanism behind **Diagonalization**.
+
+#### Parameters
+* **`A_B`**: The square linear transformation matrix in Basis $B$.
+* **`B`**: The starting basis matrix (columns are basis vectors).
+* **`C`**: The target basis matrix (columns are basis vectors).
+
+#### 🛠 Usage Example
+```matlab
+A_Standard = [4, 1; 3, 2];
+E = [1, 0; 0, 1];
+B_Eigen = [1, -1; 1, 3]; % Eigenvector basis
+
+% Perform the similarity transform
+A_Diag = tk.similarityTransform(A_Standard, E, B_Eigen);
+
+% The output A_Diag will be a diagonal matrix of the eigenvalues:
+% [5, 0]
+% [0, 1]
+```
+</details>
+
 ### Chapter 5: Orthogonal Projection
 <details>
 <summary><code>isOrthogonalSet(S)</code> / <code>isOrthonormalSet(S)</code></summary>
@@ -500,62 +592,40 @@ The console input parser requires specific formatting. Use the letter `R` follow
 <details>
 <summary><mark><code>generateInitialConditions(n)</code></mark></summary>
 
-- **`n`**: The number of initial conditions of a differential system.
-- **Description**: Returns formatted string to be input as initial conditions in MATLAB's `dsolve`.
-
-  <details>
-  <summary><code>More Information & Usage Example</code></summary>
-
-  ## 🌀 System of Linear Differential Equations
-  
-  ### `generateInitialConditions(obj, n)`
-  
-  This method is an interactive helper utility used when solving Initial Value Problems (IVPs) for systems of linear differential equations (e.g., $y' = Ay$). It prompts the user in the command window to enter the initial conditions for an $n$-dimensional system and formats the inputs into a string that can be parsed by MATLAB's `dsolve` function.
-  
-  #### Logic
-  When solving a system of ODEs mathematically, you often have starting conditions like $y_1(0) = 5$ and $y_2(0) = -1$. This function uses a loop to ask the user for both the time variable ($t$) and the resulting value ($y_i$) for each equation in the system. 
-  
-  It constructs a string array of logical equations (using the `==` operator) required by MATLAB's symbolic solver, such as: `"[y1(0)==5, y2(0)==-1]"`.
-  
-  #### Parameters
-  * `n`: An integer representing the dimension of the system (the number of variables $y_1, y_2, \dots, y_n$).
-  
-  #### Returns
-  * `s`: A formatted string containing the array of initial conditions. This string is typically passed to the `eval()` function before being fed into `dsolve`.
-  
-  ---
-  
-  ### 🛠 Usage Example
-  
-  ```matlab
-  % Instantiate the toolkit
-  tk = MA1508E();
-  
-  % Generate conditions for a 2D system (y1 and y2)
-  % Note: This will pause script execution to wait for user input
-  cond_string = tk.generateInitialConditions(2);
-  
-  % --- Interactive Console Session ---
-  % Enter the t value for y1: 0
-  % Enter the result of y1(0): 5
-  % Enter the t value for y2: 0
-  % Enter the result of y2(0): -1
-  % -----------------------------------
-  
-  disp("Formatted output string:");
-  disp(cond_string);
-  % Output: "[y1(0)==5, y2(0)==-1]"
-  ```
-
-  </details>
+### An interactive utility function that prompts the user in the Command Window to input specific starting values for an Initial Value Problem (IVP). *Note: This is typically called automatically by `solveDifferentialSystem`.*
 </details>
 
 <details>
-<summary><code>solveDifferentialSystem(A, isInitial)</code></summary>
+<summary><mark><code>solveDifferentialSystem(A, isInitial)</code></mark><summary>
 
-- **`A`**: The matrix corresponding to the differential system.
-- **`isInitial`**: Boolean. `false` to obtain general solution of the differential system, `true` for particular solution.
-- **Description**: Returns a struct containing the symbolic solution to the system.
+### The core ODE solver. This method doesn't just output the final answer; it walks through the characteristic analysis (eigenvalues) before constructing the general or specific solution. 
+
+It is mathematically robust and automatically handles:
+* Standard distinct real roots.
+* Complex eigenvalues (automatically simplifying into $\sin$ and $\cos$ terms).
+* **Defective Matrices** (repeated roots that require generalized eigenvectors, outputting the correct $t \cdot e^{\lambda t}$ terms).
+* Decoupled systems and zero-eigenvalue states.
+
+#### Parameters
+* **`A`**: The $n \times n$ coefficient matrix representing the system $y' = Ay$.
+* **`isInitial`** *(optional, logical)*: 
+    * `false` (**Default**): Returns the General Solution with unknown constants ($C_1, C_2, \dots$).
+    * `true`: Triggers an interactive prompt for $y(0)$ values and solves the Initial Value Problem (IVP).
+
+> [!TIP]
+> **Exam Verification:** Use the `false` flag to check your manual eigenvalues and characteristic equations. If your manual $\lambda$ values don't match the "Characteristic Analysis" section of the output, you likely made a sign error in your determinant!
+
+#### 🛠 Usage Example 1: General Solution
+```matlab
+% A system with complex eigenvalues (+/- i)
+A_Rotation = [0, -1; 
+              1,  0];
+
+% Call without the second argument
+tk.solveDifferentialSystem(A_Rotation);
+
+% Output will display Eigenvalues (i, -i) 
+% and the general trigonometric solution.
 </details>
 
 <details>

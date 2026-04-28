@@ -2,7 +2,13 @@ classdef MA1508E
     properties (Constant)
         ZERO_TOLERANCE = 10^-6;
     end
+
     methods
+        function obj = MA1508E()
+            % Constructor
+            fprintf('MA1508E Toolkit Initialized.\n');
+        end
+        
         % Chapter 1: Linear Systems
         function res = isValidERO(~, str)
             % Standardize spaces and case
@@ -166,6 +172,100 @@ classdef MA1508E
             
             fprintf("The right inverse of the matrix exists.\n")
             RI = A' * inv(A * A');
+        end
+
+        % Chapter 3: Vector Spaces & Change of Basis
+        function check = isBasis(obj, V)
+            % Evaluates if a set of column vectors forms a valid basis in Rn
+            arguments
+                obj;
+                V;
+            end
+            
+            [rows, cols] = size(V);
+            if rows ~= cols
+                fprintf('  [!] Check Failed: Not a square matrix. You need %d vectors for R^%d.\n', rows, rows);
+                check = false;
+            elseif det(sym(V)) == 0
+                fprintf('  [!] Check Failed: Vectors are linearly dependent (Determinant is 0).\n');
+                check = false;
+            else
+                fprintf('  [v] Check Passed: Set is a valid basis.\n');
+                check = true;
+            end
+        end
+
+        function P = getTransitionMatrix(obj, B, C)
+            % Calculates the transition matrix from basis B to basis C
+            arguments
+                obj;
+                B;
+                C;
+            end
+            
+            [rB, cB] = size(B);
+            [rC, cC] = size(C);
+            
+            if rB ~= rC || cB ~= cC
+                error('Dimension Mismatch: Bases B and C must have the same dimensions.');
+            end
+            if det(sym(C)) == 0
+                error('Math Error: Target set C is linearly dependent and cannot form a basis.');
+            end
+            
+            P = inv(sym(C)) * sym(B);
+            
+            fprintf('\n==================================================\n');
+            fprintf('        TRANSITION MATRIX: [I]_{C <- B}           \n');
+            fprintf('==================================================\n');
+            disp(P);
+            fprintf('==================================================\n\n');
+        end
+
+        function v_C = changeVectorBasis(obj, v_B, B, C)
+            % Converts coordinates of a vector from basis B to basis C
+            arguments
+                obj;
+                v_B;
+                B;
+                C;
+            end
+            
+            % Force v_B to be a column vector just in case the student passed a row vector
+            if isrow(v_B)
+                v_B = v_B.';
+            end
+            
+            P = obj.getTransitionMatrix(B, C);
+            v_C = P * sym(v_B);
+            
+            fprintf('\n➜ Coordinates of vector in Target Basis C:\n');
+            disp(v_C);
+        end
+
+        function A_C = similarityTransform(obj, A_B, B, C)
+            % Converts a linear transformation matrix A from basis B to basis C
+            arguments
+                obj;
+                A_B;
+                B;
+                C;
+            end
+            
+            [rA, cA] = size(A_B);
+            if rA ~= cA
+                error('Dimension Error: Transformation matrix A must be square.');
+            end
+            
+            % For similarity, P is the transition from C to B
+            P = obj.getTransitionMatrix(C, B); 
+            A_C = inv(P) * sym(A_B) * P;
+            
+            fprintf('\n==================================================\n');
+            fprintf('      SIMILARITY TRANSFORM: A_C = P^-1 * A_B * P  \n');
+            fprintf('==================================================\n');
+            disp(A_C);
+            fprintf('==================================================\n\n');
         end
         
         % Chapter 5: Orthogonal Projection
