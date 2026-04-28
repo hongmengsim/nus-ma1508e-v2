@@ -208,7 +208,7 @@ P = tk.getTransitionMatrix(E, B);
 <details>
 <summary><code>changeVectorBasis(v_B, B, C)</code></summary>
 
-### Converts the coordinates of a specific physical vector from one basis to another using the relation $[v]_C = P_{C \leftarrow B} [v]_B$.
+### Converts the coordinates of a specific physical vector from one basis to another using the relation [v]<sub>C</sub> = P<sub>C &larr; B</sub> [v]<sub>B</sub>.
 
 #### Parameters
 * **`v_B`**: The coordinate vector relative to Basis $B$.
@@ -626,6 +626,7 @@ tk.solveDifferentialSystem(A_Rotation);
 
 % Output will display Eigenvalues (i, -i) 
 % and the general trigonometric solution.
+```
 </details>
 
 <details>
