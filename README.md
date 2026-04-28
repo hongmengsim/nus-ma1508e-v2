@@ -41,20 +41,201 @@ m.isOrthogonalSet(A);
 ```
 Output:
 ```MATLAB
-  The set is othogonal
+  The set is orthogonal
 ```
 ---
+## 📚 Detailed API Reference
+Click on any method below to expand its full documentation, parameters, and conditions.
 
-## 📈 Chapter 7 Phase Portrait Gallery
+### Chapter 1: Linear Systems
+<details>
+<summary><code>isValidERO(str)</code></summary>
 
+- **`str`**: String containing the elementary row operation.
+- **Description**: Returns `true` if `str` follows the required syntax, `false` otherwise.
+</details>
+
+<details>
+<summary><code>generateElemAdd(data)</code> / <code>generateElemSwap(data)</code></summary>
+
+- **`data`**: Struct containing the elementary row operation.
+- **Description**: Returns the elementary matrix corresponding to the elementary row operation.
+</details>
+
+<details>
+<summary><code>generateElemMatrix(str, n)</code></summary>
+
+- **`str`**: Elementary row operation to be performed (Example: `R2 + 0.5R3`, `3R1`, `R4 - 1R2`, `R2 S R3`).
+- **`n`**: The number of rows of the matrix.
+- **Description**: Returns an elementary matrix, which can be pre-multiplied to a matrix to perform an elementary row operation.
+</details>
+
+<details>
+<summary><code>performERO(A)</code></summary>
+  
+### `performERO(A)`
+**Description:** Launches an interactive, step-by-step console loop that allows the user to apply Elementary Row Operations (EROs) to a given matrix. The matrix is updated and printed to the console after every successful operation. Type `exit` or `quit` to break the loop.
+
+> **Note for V2:** Input strings no longer require quotation marks in the console. Furthermore, passing a symbolic matrix (`sym()`) ensures all intermediate fractions remain exact.
+
+#### **Parameters**
+- **`A`** *(Matrix | sym)*: The target matrix you want to perform operations on. 
+
+#### **Supported Operation Syntax**
+The console input parser requires specific formatting. Use the letter `R` followed by the row number. **Spaces are required** between terms for addition and swapping.
+
+| Operation Type | Syntax | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **Row Swapping** | `Ri S Rj` | Swaps Row *i* with Row *j* | `R1 S R2` |
+| **Scalar Multiplication** | `cRi` | Multiplies Row *i* by a scalar value *c* | `3R1` or `1/2R3` |
+| **Row Addition** | `Rj + cRi` | Adds *c* times Row *i* to Row *j* | `R2 + 2R1` |
+| **Row Subtraction** | `Rj - cRi` | Subtracts *c* times Row *i* from Row *j* | `R4 - 1R2` |
+
+#### **Example Usage Session**
+
+**1. Initialize in Command Window:**
+```matlab
+>> m = MA1508E();
+>> A = sym([1 2 3; 2 4 8]);
+>> m.performERO(A);
+```
+</details>
+
+### Chapter 2: Matrices
+<details>
+<summary><code>leftInverse(A)</code></summary>
+
+- **`A`**: $m \times n$ matrix to check.
+- **Description**: Returns the left inverse of $A$ if it exists. 
+- **Condition**: $m > n$ for left inverse to exist.
+</details>
+
+<details>
+<summary><code>rightInverse(A)</code></summary>
+
+- **`A`**: $m \times n$ matrix to check.
+- **Description**: Returns the right inverse of $A$ if it exists. 
+- **Condition**: $m < n$ for right inverse to exist.
+</details>
+
+### Chapter 5: Orthogonal Projection
+<details>
+<summary><code>isOrthogonalSet(S)</code> / <code>isOrthonormalSet(S)</code></summary>
+
+- **`S`**: Set of vectors in matrix form.
+- **Description**: Prints whether the given set of vectors is strictly orthogonal or orthonormal.
+</details>
+
+<details>
+<summary><code>isOrthogonalTo(S, target)</code></summary>
+
+- **`S`**: Set of vectors in matrix form.
+- **`target`**: The vector to be checked.
+- **Description**: Prints whether `target` is orthogonal to the subspace spanned by the set `S`.
+</details>
+
+<details>
+<summary><code>toOrthonormalSet(OG)</code></summary>
+
+- **`OG`**: Orthogonal set of vectors in matrix form.
+- **Description**: Normalises the set of vectors. Returns `ON`, the corresponding orthonormal set.
+</details>
+
+<details>
+<summary><code>dotWithSet(S, v)</code></summary>
+
+- **`S`**: Set of vectors in matrix form.
+- **`v`**: Column vector with the same number of rows as `S`.
+- **Description**: Returns the dot product between each column of `S` and `v`.
+</details>
+
+<details>
+<summary><code>orthogonalProj(S, w)</code></summary>
+
+- **`S`**: Set of vectors in matrix form.
+- **`w`**: The vector to be projected.
+- **Description**: Returns the exact orthogonal projection of `w` onto the span of `S`.
+</details>
+
+<details>
+<summary><code>gramSchmidt(v, showSteps)</code></summary>
+
+- **`v`**: The basis to be converted into an orthogonal basis.
+- **`showSteps`**: Boolean (Default = `true`). Set to false to hide algebraic working.
+- **Description**: Returns `[u, r]`, where `u` is the corresponding orthogonal basis and `r` is the projection matrix.
+</details>
+
+<details>
+<summary><code>calcLSS(A, b)</code></summary>
+
+- **`A`**: The matrix to calculate the least squares solution.
+- **`b`**: The column vector.
+- **Description**: Returns the general least square solution to $A\mathbf{x} = \mathbf{b}$.
+</details>
+
+### Chapter 6: Diagonalisation
+<details>
+<summary><code>getEigenvalues(A)</code></summary>
+
+- **`A`**: The matrix corresponding to the differential system.
+- **Description**: Returns both real and complex eigenvalues corresponding to `A`.
+</details>
+
+<details>
+<summary><code>getEigenvector(A, lambda, output)</code></summary>
+
+- **`A`**: The matrix corresponding to the differential system.
+- **`lambda`**: An eigenvalue of `A`.
+- **`output`**: Show steps to obtain eigenvector (Default = `true`).
+- **Description**: Returns the basis for the eigenspace associated to `lambda`.
+</details>
+
+<details>
+<summary><code>isAssociatedEigenvalue(A, lambda)</code></summary>
+
+- **`A`**: The matrix corresponding to the differential system.
+- **`lambda`**: Eigenvalue to verify.
+- **Description**: Returns `true` if lambda is an eigenvalue associated to `A`, `false` otherwise.
+</details>
+
+<details>
+<summary><code>getGeneralisedEigenvector(A, lambda)</code></summary>
+
+- **`A`**: The matrix corresponding to the differential system.
+- **`lambda`**: An eigenvalue of `A`.
+- **Description**: Returns the matrix which gives you the valid generalised eigenvector for defective matrices.
+</details>
+
+### Chapter 7: System of Linear Differential Equations
+<details>
+<summary><code>generateInitialConditions(n)</code></summary>
+
+- **`n`**: The number of initial conditions of a differential system.
+- **Description**: Returns formatted string to be input as initial conditions in MATLAB's `dsolve`.
+</details>
+
+<details>
+<summary><code>solveDifferentialSystem(A, isInitial)</code></summary>
+
+- **`A`**: The matrix corresponding to the differential system.
+- **`isInitial`**: Boolean. `false` to obtain general solution of the differential system, `true` for particular solution.
+- **Description**: Returns a struct containing the symbolic solution to the system.
+</details>
+
+<details>
+<summary><code>plotPhasePortrait(A)</code></summary>
+  
 Use the `m.plotPhasePortrait(A)` function to instantly visualize the stability of 2x2 differential systems. The thick red lines indicate the exact straight-line solutions (eigenvectors).
 
 ### 1. The Saddle Point (Unstable)
+
 One positive eigenvalue, one negative eigenvalue. The arrows flow inward along one eigenvector and outward along the other.
 ```MATLAB
 A = sym([1 2; 2 1]);
 m.plotPhasePortrait(A);
 ```
+![Saddle](saddle.svg)
+
 ### 2. The Sink / Stable Node
 
 Both eigenvalues are negative. All trajectories are pulled directly into the origin over time.
@@ -62,6 +243,8 @@ Both eigenvalues are negative. All trajectories are pulled directly into the ori
 A = sym([-2 1; 1 -2]);
 m.plotPhasePortrait(A);
 ```
+![Sink](sink.svg)
+
 ### 3. The Source / Unstable Node
 
 Both eigenvalues are positive. All trajectories are pushed outward and away from the origin.
@@ -69,10 +252,15 @@ Both eigenvalues are positive. All trajectories are pushed outward and away from
 A = sym([2 1; 1 2]);
 m.plotPhasePortrait(A);
 ```
+![Source](source.svg)
+
 ### 4. The Spiral
 
-Complex eigenvalues (λ=a±bi). If the real part a is negative, it spirals inward (Stable). If a is positive, it spirals outward (Unstable).
+Complex eigenvalues ($\lambda = a \pm bi$). If the real part a is negative, it spirals inward (Stable). If a is positive, it spirals outward (Unstable).
 ```MATLAB
 A = sym([-1 1; -5 -1]);
 m.plotPhasePortrait(A);
 ```
+![Spiral](spiral.svg)
+</details>
+
