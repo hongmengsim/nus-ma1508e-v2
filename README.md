@@ -164,6 +164,49 @@ The console input parser requires specific formatting. Use the letter `R` follow
 </details>
 
 <details>
+<summary><mark><code>getRowTransformation(A, B)</code></mark></summary>
+
+### Determines if two matrices are row-equivalent and calculates the exact transformation matrix $E$ such that $EA = B$. 
+
+Beyond calculating the net matrix, this function performs an **Elementary Matrix Decomposition ($E = P^T L U$)** to reverse-engineer the specific, granular row operations (swaps, scaling, and additions) required to transform $A$ into $B$.
+
+> [!IMPORTANT]
+> **Order of Operations:** Because matrix multiplication is applied from **right-to-left**, the discrete steps printed by this function should be read as a sequence starting from the matrix physically touching $A$ (the $U$ operations) and moving outward.
+
+#### Parameters
+* **`A`**: The starting $m \times n$ matrix.
+* **`B`**: The target $m \times n$ matrix.
+
+#### 🛠 Usage Example
+```matlab
+% Starting Matrix
+A = [1, 2, 1; 
+     2, 5, 3; 
+     1, 0, 2];
+
+% Target Matrix
+B = [1, 2, 1; 
+     0, 1, 1; 
+     0, 0, 3];
+
+% Find the granular operations
+E = tk.getRowTransformation(A, B);
+
+%➜ The Net Transformation Matrix (E) where E * A = B is:
+%     1     0     0
+%    -2     1     0
+%    -5     2     1
+
+% ➜ DISCRETE ELEMENTARY ROW OPERATIONS:
+% Step 1: Add to Row 2 ( R2 = R2 + (-2)*R1 )
+% Step 2: Add to Row 3 ( R3 = R3 + (-5)*R1 )
+% Step 3: Add to Row 3 ( R3 = R3 + (2)*R2 )
+
+% [v] Verification Check: isequal(E * A, B) -> TRUE
+```
+</details>
+
+<details>
 <summary><code>evaluateIMT(A)</code></summary>
 
 ### Evaluates the given matrix against the **Invertible Matrix Theorem (IMT)**. By analyzing the matrix size and determinant, it outputs a comprehensive proof checklist of exactly which theoretical properties are currently true for that matrix.

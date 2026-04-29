@@ -182,6 +182,136 @@ classdef MA1508E
             RI = A' * inv(A * A');
         end
 
+        function E = getRowTransformation(obj, A, B)
+            % Finds the transformation matrix E that represents the sequence of 
+            % elementary row operations to turn A into B, such that E*A = B.
+            arguments
+                obj;
+                A;
+                B;
+            end
+            
+            [m_A, n_A] = size(A);
+            [m_B, n_B] = size(B);
+            
+            fprintf('\n==================================================\n');
+            fprintf('          ROW EQUIVALENCE & TRANSFORMATION        \n');
+            fprintf('==================================================\n');
+            
+            if m_A ~= m_B || n_A ~= n_B
+                fprintf('  [!] Error: Matrices must be the exact same dimension.\n');
+                fprintf('      A is %dx%d, B is %dx%d.\n', m_A, n_A, m_B, n_B);
+                fprintf('==================================================\n\n');
+                E = [];
+                return;
+            end
+            
+            A_sym = sym(A);
+            B_sym = sym(B);
+            I = sym(eye(m_A));
+            
+            % Augment with Identity and find RREF
+            rref_A = rref([A_sym, I]);
+            rref_B = rref([B_sym, I]);
+            
+            % Split into the reduced matrix R and the operation matrix E
+            R_A = rref_A(:, 1:n_A);
+            E_A = rref_A(:, n_A+1:end);
+            
+            R_B = rref_B(:, 1:n_B);
+            E_B = rref_B(:, n_B+1:end);
+            
+            % Check if they are actually row equivalent
+            if ~isequal(simplify(R_A), simplify(R_B))
+                fprintf('  [!] Matrices are NOT row equivalent.\n');
+                fprintf('      They do not share the same Reduced Row Echelon Form (RREF).\n');
+                fprintf('      No sequence of elementary row operations can turn A into B.\n');
+                E = [];
+            else
+                fprintf('  [v] Matrices ARE row equivalent (They share the same RREF).\n');
+                
+                % Calculate the exact transformation matrix
+                % B = (E_B^-1 * E_A) * A
+                E = simplify(inv(E_B) * E_A);
+                
+                fprintf('  ➜ The Net Transformation Matrix (E) where E * A = B is:\n');
+                disp(E);
+                
+                % --- NEW: ELEMENTARY DECOMPOSITION (LU FACTORIZATION) ---
+                fprintf('  ➜ Elementary Matrix Decomposition (E = P^T * L * U):\n');
+                [L, U, P] = lu(sym(E));
+                PT = transpose(P);
+                
+                fprintf('    1. Permutations / Row Swaps (P^T):\n'); 
+                disp(PT);
+                fprintf('    2. Forward Row Additions (L):\n'); 
+                disp(L);
+                fprintf('    3. Row Scaling & Back-Substitutions (U):\n'); 
+                disp(U);
+                
+                fprintf('\n  ➜ DISCRETE ELEMENTARY ROW OPERATIONS:\n');
+                fprintf('    (Note: Because E = P^T * L * U, the chronological application on A \n');
+                fprintf('     is right-to-left: first U operations, then L, then P^T)\n\n');
+                
+                stepCounter = 1;
+                
+                % 1. Extract operations from U (Scaling and Backward Adds)
+                for j = n_A:-1:1
+                    for i = j:-1:1
+                        val = simplify(U(i, j));
+                        if i == j && val ~= 1 && val ~= 0
+                            fprintf('    Step %d: Scale Row %d ( R%d = %s * R%d )\n', stepCounter, i, i, char(val), i);
+                            stepCounter = stepCounter + 1;
+                        elseif i ~= j && val ~= 0
+                            % Normalize the addition by the pivot to get the pure operation
+                            pivot = simplify(U(i,i));
+                            if pivot ~= 0
+                                addVal = simplify(val / pivot);
+                                fprintf('    Step %d: Add to Row %d ( R%d = R%d + (%s)*R%d )\n', stepCounter, i, i, i, char(addVal), j);
+                                stepCounter = stepCounter + 1;
+                            end
+                        end
+                    end
+                end
+                
+                % 2. Extract operations from L (Forward Adds)
+                for j = 1:n_A
+                    for i = j+1:m_A
+                        val = simplify(L(i, j));
+                        if val ~= 0
+                            fprintf('    Step %d: Add to Row %d ( R%d = R%d + (%s)*R%d )\n', stepCounter, i, i, i, char(val), j);
+                            stepCounter = stepCounter + 1;
+                        end
+                    end
+                end
+                
+                % 3. Extract operations from P^T (Row Swaps)
+                for i = 1:m_A
+                    % Find where the 1 is in this row of P^T
+                    swapTarget = find(PT(i, :) == 1);
+                    % Only print if it actually moved (and avoid double printing swaps)
+                    if swapTarget ~= i && swapTarget > i 
+                        fprintf('    Step %d: Swap Rows ( R%d <-> R%d )\n', stepCounter, i, swapTarget);
+                        stepCounter = stepCounter + 1;
+                    end
+                end
+                
+                if stepCounter == 1
+                    fprintf('    (No operations required. Matrices are identical.)\n');
+                end
+                % --------------------------------------------------------
+                
+                % Final verification check
+                fprintf('  [v] Verification Check: isequal(E * A, B) -> ');
+                if isequal(simplify(E * A_sym), B_sym)
+                    fprintf('TRUE\n');
+                else
+                    fprintf('FALSE\n');
+                end
+            end
+            fprintf('==================================================\n\n');
+        end
+
         function check = isSquare(~, A)
             % Evaluates if a matrix is square based purely on its dimensions
             arguments
@@ -317,6 +447,105 @@ classdef MA1508E
         end
 
         % Chapter 3: Vector Spaces & Change of Basis
+
+        function check = isInSpan(~, S, v)
+            % Checks if vector(s) v exist within the span of set S
+            arguments
+                ~;
+                S; % Matrix where columns are the spanning set
+                v; % Vector(s) to check
+            end
+            
+            fprintf('\n==================================================\n');
+            fprintf('                 SPAN ANALYSIS                    \n');
+            fprintf('==================================================\n');
+            
+            rankS = rank(sym(S));
+            rankSv = rank(sym([S, v]));
+            
+            if rankS == rankSv
+                check = true;
+                fprintf('  [v] The vector IS in the span.\n');
+                fprintf('      Rank(S) = %d matches Rank([S, v]) = %d.\n', rankS, rankSv);
+            else
+                check = false;
+                fprintf('  [!] The vector is NOT in the span.\n');
+                fprintf('      Rank(S) = %d does not match Rank([S, v]) = %d.\n', rankS, rankSv);
+            end
+            fprintf('==================================================\n\n');
+        end
+
+        function compareSubspaces(~, U, W)
+            % Compares two subspaces to determine containment and equality
+            arguments
+                ~;
+                U; % Matrix where columns span Subspace U
+                W; % Matrix where columns span Subspace W
+            end
+            
+            fprintf('\n==================================================\n');
+            fprintf('              SUBSPACE CONTAINMENT                \n');
+            fprintf('==================================================\n');
+            
+            rU = rank(sym(U));
+            rW = rank(sym(W));
+            rUW = rank(sym([U, W]));
+            
+            fprintf('  ➜ Dimension of U: %d\n', rU);
+            fprintf('  ➜ Dimension of W: %d\n', rW);
+            fprintf('  ➜ Dimension of Union Span [U, W]: %d\n\n', rUW);
+            
+            if rU == rW && rUW == rU
+                fprintf('  [v] U and W are the EXACT SAME subspace (U = W).\n');
+            elseif rUW == rW
+                fprintf('  [v] U is a PROPER SUBSPACE of W (U ⊂ W).\n');
+                fprintf('      Every vector in U can be built using vectors from W.\n');
+            elseif rUW == rU
+                fprintf('  [v] W is a PROPER SUBSPACE of U (W ⊂ U).\n');
+                fprintf('      Every vector in W can be built using vectors from U.\n');
+            else
+                fprintf('  [!] Neither is a subspace of the other.\n');
+                fprintf('      They may intersect, but one does not fully contain the other.\n');
+            end
+            fprintf('==================================================\n\n');
+        end
+
+        function intersectionBasis = intersectSubspaces(~, U, W)
+            % Finds the basis for the intersection of two subspaces
+            arguments
+                ~;
+                U; % Matrix where columns span Subspace U
+                W; % Matrix where columns span Subspace W
+            end
+            
+            fprintf('\n==================================================\n');
+            fprintf('             SUBSPACE INTERSECTION                \n');
+            fprintf('==================================================\n');
+            
+            % Setup block matrix [U, -W] to solve Ux - Wy = 0
+            blockMatrix = [sym(U), -sym(W)];
+            nullBasis = null(blockMatrix);
+            
+            if isempty(nullBasis)
+                fprintf('  [i] The intersection is only the ZERO VECTOR {0}.\n');
+                fprintf('      The subspaces are disjoint.\n');
+                intersectionBasis = [];
+            else
+                % Extract the 'x' portion of the null space vectors
+                colsU = size(U, 2);
+                x_components = nullBasis(1:colsU, :);
+                
+                % Multiply U by the x_components to get the physical basis vectors
+                intersectionBasis = simplify(sym(U) * x_components);
+                
+                dimIntersect = size(intersectionBasis, 2);
+                fprintf('  [v] The intersection is a subspace of dimension %d.\n', dimIntersect);
+                fprintf('  ➜ Basis for the intersection:\n');
+                disp(intersectionBasis);
+            end
+            fprintf('==================================================\n\n');
+        end
+
         function check = isBasis(obj, V)
             % Evaluates if a set of column vectors forms a valid basis in Rn
             arguments
