@@ -15,6 +15,7 @@ This toolkit has been synchronized with the **MA1508E Finals Syllabus** to prior
 ```sh
 git clone [https://github.com/hongmengsim/nus-ma1508e-v2.git](https://github.com/hongmengsim/nus-ma1508e-v2.git)
 cd nus-ma1508e-v2
+```
 Usage
 Initialise the class instance in your Command Window:
 ```MATLAB
