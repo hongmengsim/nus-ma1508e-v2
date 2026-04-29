@@ -872,6 +872,7 @@ classdef MA1508E
         end
 
         function orthoBasis = getOrthogonalBasis(obj, A)
+
             % Finds an orthogonal basis for the subspace spanned by the columns of A
             
             % 1. Find the linearly independent basis vectors (Pivot columns)
@@ -889,6 +890,30 @@ classdef MA1508E
             
             fprintf("The Orthogonal Basis for the subspace is:\n");
             disp(orthoBasis);
+        end
+
+        function [p, P] = projectVector(obj, A, v)
+            % Calculates the projection of vector v onto the column space of A
+            % p = P * v where P = A(A'A)^-1A'
+            
+            A_sym = sym(A);
+            v_sym = sym(v);
+            
+            % 1. Get the projection matrix
+            P = obj.getProjectionMatrix(A_sym);
+            
+            % 2. Calculate the projected vector
+            p = simplify(P * v_sym);
+            
+            % --- BEAUTIFIED OUTPUT ---
+            fprintf('\n==================================================\n');
+            fprintf('               VECTOR PROJECTION                  \n');
+            fprintf('==================================================\n');
+            fprintf('Target Vector (v):\n');
+            disp(v_sym);
+            fprintf('Projected Vector (proj_W v):\n');
+            disp(p);
+            fprintf('==================================================\n\n');
         end
 
         function P = getProjectionMatrix(~, A)

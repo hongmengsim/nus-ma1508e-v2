@@ -761,6 +761,44 @@ orthoBasis = tk.getOrthogonalBasis(A);
 </details>
 
 <details>
+<summary><mark><code>projectVector(A, v)</code></mark></summary>
+
+### Calculates the orthogonal projection of vector $\mathbf{v}$ onto the subspace spanned by $A$.
+This is a convenience wrapper that first generates the projection matrix $P$ and then applies it to the target vector. It is the direct solution for "Find the projection of $\mathbf{v}$ onto $W$" problems.
+
+
+
+#### Mathematical Logic
+The projection $\mathbf{p}$ is calculated using the relationship:
+$$\mathbf{p} = P\mathbf{v} = A(A^T A)^{-1}A^T \mathbf{v}$$
+The resulting vector $\mathbf{p}$ is the "closest point" in the subspace to the original vector $\mathbf{v}$.
+
+#### Parameters
+* **`A`**: Matrix whose columns span the target subspace.
+* **`v`**: The vector to be projected.
+
+#### 🛠 Usage Example
+```matlab
+% Define the XY-plane in R^3
+A = [1, 0; 
+     0, 1; 
+     0, 0];
+
+% Define a vector sticking out of the plane
+v = [3; 4; 5];
+
+% Project v onto the plane
+[p, P] = tk.projectVector(A, v);
+
+% Output:
+% Projected Vector (proj_W v):
+%      3
+%      4
+%      0
+```
+</details>
+
+<details>
 <summary><mark><code>getProjectionMatrix(A)</code></mark></summary>
 
 ### Generates the unique Projection Matrix $P$ for the subspace spanned by the columns of $A$.
