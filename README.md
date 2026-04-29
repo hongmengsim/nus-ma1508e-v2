@@ -163,6 +163,76 @@ The console input parser requires specific formatting. Use the letter `R` follow
 - **Condition**: $m < n$ for right inverse to exist.
 </details>
 
+<details>
+<summary><code>evaluateIMT(A)</code></summary>
+
+### Evaluates the given matrix against the **Invertible Matrix Theorem (IMT)**. By analyzing the matrix size and determinant, it outputs a comprehensive proof checklist of exactly which theoretical properties are currently true for that matrix.
+
+#### Parameters
+* **`A`**: The square matrix to be evaluated.
+
+#### 🛠 Usage Example
+```matlab
+% A valid 2x2 square matrix
+A_Valid = [2, 0; 
+           0, 3];
+
+% Evaluate the theoretical properties of the matrix
+tk.evaluateIMT(A_Valid);
+
+% Output will display the determinant and prove statements such as:
+% - A is invertible
+% - Columns form a basis for R^2
+% - Ax = 0 has only the trivial solution
+```
+</details>
+
+<details>
+<summary><code>checkSymmetry(A)</code></summary>
+
+### Evaluates whether a square matrix is Symmetric ($A = A^T$) or Skew-Symmetric ($A = -A^T$). If either is true, the console outputs a checklist of proven theoretical properties (such as the Spectral Theorem).
+
+#### Parameters
+* **`A`**: The square matrix to be evaluated.
+
+#### 🛠 Usage Example
+```matlab
+% A symmetric matrix
+A_Sym = [2, 1, 3; 
+         1, 5, 4; 
+         3, 4, 8];
+
+tk.checkSymmetry(A_Sym);
+
+% Output will prove:
+% - A is orthogonally diagonalizable (Spectral Theorem)
+% - All eigenvalues are real
+``` 
+</details>
+
+<details>
+<summary><code>checkOrthogonal(A)</code></summary>
+
+Evaluates whether a matrix is Orthogonal. Rather than relying on computationally heavy matrix inverses, this function uses the core definition A<sup>T</sup>A = I to prove the relationship A<sup>T</sup> = A<sup>-1</sup>. 
+
+#### Parameters
+* **`A`**: The square matrix to be evaluated.
+
+#### 🛠 Usage Example
+```matlab
+% A 2D Rotation Matrix (which is always orthogonal)
+A_Rot = [ 0, 1; 
+         -1, 0];
+
+tk.checkOrthogonal(A_Rot);
+
+% Output will prove:
+% - A^T = A^-1
+% - Columns/Rows form orthonormal bases
+% - Lengths and angles are preserved
+```
+</details>
+
 ### Chapter 3: Vector Spaces & Change of Basis
 
 <details>
@@ -435,6 +505,33 @@ A_Diag = tk.similarityTransform(A_Standard, E, B_Eigen);
 </details>
 
 ### Chapter 6: Diagonalisation
+
+<details>
+<summary><mark><code>computeSVD(A)</code></mark></summary>
+
+### Performs Singular Value Decomposition (SVD) analysis on any $m \times n$ matrix. 
+
+> [!WARNING]
+> **The Dimension Trap:** Non-square matrices do not have eigenvalues or eigenvectors. If you are asked to analyze the vectors of an $m \times n$ matrix, you must use SVD to analyze $A^T A$ and $A A^T$ instead. This function automates that process.
+
+#### Parameters
+* **`A`**: Any $m \times n$ matrix.
+
+#### 🛠 Usage Example
+```matlab
+% A 2x3 Rectangular Matrix
+A_Rect = [3, 2, 2; 
+          2, 3, -2];
+
+tk.computeSVD(A_Rect);
+
+% Output will automatically bypass standard eigenanalysis and output:
+% - The Right Singular Vectors (from A^T * A)
+% - The Left Singular Vectors (from A * A^T)
+% - The non-zero Singular Values (σ)
+```
+</details>
+
 <details>
 <summary><code>getEigenvalues(A)</code></summary>
 

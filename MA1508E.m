@@ -10,6 +10,7 @@ classdef MA1508E
         end
         
         % Chapter 1: Linear Systems
+
         function res = isValidERO(~, str)
             % Standardize spaces and case
             str = upper(str); 
@@ -29,6 +30,7 @@ classdef MA1508E
             
             res = isAdd || isSwap || isMultiple;
         end
+
         function M = generateElemAdd(~, data)
             M = sym(eye(data.size));
             leftVal = data.left(2);
@@ -36,6 +38,7 @@ classdef MA1508E
             rightVal = data.right(2);
             M(leftVal, rightVal) = rightCOE;
         end
+
         function M = generateElemSwap(~, data)
             M = sym(eye(data.size));
             leftVal = data.left(2);
@@ -46,6 +49,7 @@ classdef MA1508E
             M(leftVal, rightVal) = 1;
             M(rightVal, leftVal) = 1;
         end
+
         function res = generateElemMatrix(obj, str, n)
             sp = split(str);
             [numParts, ~] = size(sp);
@@ -110,6 +114,7 @@ classdef MA1508E
                     fprintf("Something went wrong.\n");
             end
         end
+
         function res = performERO(obj, A)
             [rows, ~] = size(A);
             M = A;
@@ -142,7 +147,9 @@ classdef MA1508E
                 disp(M);
             end
         end
+
         % Chapter 2: Matrices
+
         function LI = leftInverse(~, A)
             [rows, cols] = size(A);
             if rows < cols 
@@ -158,6 +165,7 @@ classdef MA1508E
             fprintf("The left inverse of the matrix exists.\n")
             LI = inv(A' * A) * A';
         end
+
         function RI = rightInverse(~, A)
             [rows, cols] = size(A);
             if rows > cols 
@@ -172,6 +180,140 @@ classdef MA1508E
             
             fprintf("The right inverse of the matrix exists.\n")
             RI = A' * inv(A * A');
+        end
+
+        function check = isSquare(~, A)
+            % Evaluates if a matrix is square based purely on its dimensions
+            arguments
+                ~; % Ignore obj since it doesn't use class properties
+                A;
+            end
+            
+            [rows, cols] = size(A);
+            if rows == cols
+                check = true;
+                fprintf('  [v] Matrix is square (%d x %d).\n', rows, cols);
+            else
+                check = false;
+                fprintf('  [!] Matrix is NOT square (%d x %d).\n', rows, cols);
+            end
+        end
+
+        function evaluateIMT(obj, A)
+            % Evaluates the Invertible Matrix Theorem based on size and determinant
+            arguments
+                obj;
+                A;
+            end
+            
+            fprintf('\n==================================================\n');
+            fprintf('        INVERTIBLE MATRIX THEOREM (IMT) ANALYSIS  \n');
+            fprintf('==================================================\n');
+            
+            % 1. Size Check
+            [n, cols] = size(A);
+            if n ~= cols
+                fprintf('[!] ERROR: Matrix is %dx%d.\n', n, cols);
+                fprintf('The Invertible Matrix Theorem ONLY applies to square (n x n) matrices.\n');
+                fprintf('==================================================\n\n');
+                return; % Exit the function early
+            end
+            
+            % 2. Determinant Check
+            matrix_det = det(sym(A));
+            fprintf('➜ Dimension: %dx%d\n', n, n);
+            fprintf('➜ Determinant: %s\n\n', char(matrix_det));
+            
+            if matrix_det ~= 0
+                fprintf('Because det(A) ≠ 0, ALL of the following are PROVEN TRUE:\n');
+                fprintf('  1. Matrix A is invertible (A^-1 exists).\n');
+                fprintf('  2. The columns of A form a basis for R^%d.\n', n);
+                fprintf('  3. The equation Ax = 0 has ONLY the trivial solution (x = 0).\n');
+                fprintf('  4. The equation Ax = b has exactly one solution for every b in R^%d.\n', n);
+                fprintf('  5. The linear transformation x ↦ Ax is one-to-one and onto.\n');
+                fprintf('  6. Zero is NOT an eigenvalue of A.\n');
+            else
+                fprintf('Because det(A) = 0, ALL of the following are PROVEN TRUE:\n');
+                fprintf('  1. Matrix A is singular (NOT invertible).\n');
+                fprintf('  2. The columns of A are linearly dependent.\n');
+                fprintf('  3. The equation Ax = 0 has non-trivial (infinite) solutions.\n');
+                fprintf('  4. The equation Ax = b may have zero or infinite solutions (never unique).\n');
+                fprintf('  5. Zero IS an eigenvalue of A.\n');
+            end
+            fprintf('==================================================\n\n');
+        end
+
+        function checkSymmetry(obj, A)
+            % Evaluates if a matrix is symmetric (A = A^T) or skew-symmetric (A = -A^T)
+            arguments
+                obj;
+                A;
+            end
+            
+            [rows, cols] = size(A);
+            if rows ~= cols
+                fprintf('  [!] Dimension Error: Matrix is %dx%d. Symmetry requires a square matrix.\n', rows, cols);
+                return;
+            end
+            
+            A_sym = sym(A);
+            A_trans = transpose(A_sym);
+            
+            fprintf('\n==================================================\n');
+            fprintf('               SYMMETRY ANALYSIS                  \n');
+            fprintf('==================================================\n');
+            
+            if isequal(simplify(A_sym), simplify(A_trans))
+                fprintf('  [v] Matrix is SYMMETRIC (A = A^T).\n\n');
+                fprintf('  PROVEN THEORETICAL RELATIONSHIPS:\n');
+                fprintf('  1. Spectral Theorem: A is orthogonally diagonalizable.\n');
+                fprintf('  2. All eigenvalues of A are real numbers.\n');
+                fprintf('  3. Eigenvectors from different eigenspaces are orthogonal.\n');
+            elseif isequal(simplify(A_sym), simplify(-A_trans))
+                fprintf('  [v] Matrix is SKEW-SYMMETRIC (A = -A^T).\n\n');
+                fprintf('  PROVEN THEORETICAL RELATIONSHIPS:\n');
+                fprintf('  1. All main diagonal entries are exactly zero.\n');
+                fprintf('  2. If the dimension is odd, the determinant is zero.\n');
+            else
+                fprintf('  [!] Matrix is NEITHER symmetric nor skew-symmetric.\n');
+            end
+            fprintf('==================================================\n\n');
+        end
+
+        function checkOrthogonal(obj, A)
+            % Evaluates if a matrix is orthogonal (A^T = A^-1)
+            arguments
+                obj;
+                A;
+            end
+            
+            [rows, cols] = size(A);
+            if rows ~= cols
+                fprintf('  [!] Dimension Error: Matrix is %dx%d. Orthogonality requires a square matrix.\n', rows, cols);
+                return;
+            end
+            
+            A_sym = sym(A);
+            I = sym(eye(rows));
+            
+            fprintf('\n==================================================\n');
+            fprintf('             ORTHOGONALITY ANALYSIS               \n');
+            fprintf('==================================================\n');
+            
+            % A matrix is orthogonal if A^T * A = I. 
+            % We use this instead of A^T == A^-1 because calculating inverses is slow and prone to symbolic errors.
+            if isequal(simplify(transpose(A_sym) * A_sym), I)
+                fprintf('  [v] Matrix is ORTHOGONAL (A^T = A^-1).\n\n');
+                fprintf('  PROVEN THEORETICAL RELATIONSHIPS:\n');
+                fprintf('  1. The columns form an orthonormal basis for R^%d.\n', rows);
+                fprintf('  2. The rows form an orthonormal basis for R^%d.\n', rows);
+                fprintf('  3. The determinant is exactly %s.\n', char(det(A_sym)));
+                fprintf('  4. The transformation preserves lengths (||Ax|| = ||x||).\n');
+                fprintf('  5. The transformation preserves angles (Ax · Ay = x · y).\n');
+            else
+                fprintf('  [!] Matrix is NOT orthogonal (A^T ≠ A^-1).\n');
+            end
+            fprintf('==================================================\n\n');
         end
 
         % Chapter 3: Vector Spaces & Change of Basis
@@ -269,6 +411,7 @@ classdef MA1508E
         end
         
         % Chapter 5: Orthogonal Projection
+
         function res = isOrthogonalSet(obj, S)    
             [~, w] = size(S);
             for i = 1:w
@@ -318,6 +461,7 @@ classdef MA1508E
                 ON(:, i) = OG(:, i) / norm(OG(:, i));
             end
         end
+
         function T = dotWithSet(~, S, v)
             [rowsS, colsS] = size(S);
             [rowsV, ~] = size(v);
@@ -332,6 +476,7 @@ classdef MA1508E
                 T(:, i) = dot(S(:, i), v);
             end
         end
+
         function b = orthogonalProj(~, A, u)
             %A: The matrix to be projected onto
             %u: The vector to project
@@ -511,6 +656,7 @@ classdef MA1508E
         end
         
         % Chapter 6: Diagonalisation
+
         function ev = getEigenvalues(~, A)
             syms x;
             px = charpoly(A, x);
@@ -589,6 +735,53 @@ classdef MA1508E
                 disp(genSol);
             end
         end
+
+        function computeSVD(obj, A)
+            % Analyzes the Singular Value Decomposition components for any m x n matrix
+            arguments
+                obj;
+                A;
+            end
+            
+            A_sym = sym(A);
+            [m, n] = size(A_sym);
+            
+            fprintf('\n==================================================\n');
+            fprintf('      SINGULAR VALUE DECOMPOSITION (SVD)          \n');
+            fprintf('==================================================\n');
+            
+            if m == n
+                fprintf('  [i] Dimension: %dx%d (Square).\n', m, n);
+            else
+                fprintf('  [!] Dimension: %dx%d (Rectangular).\n', m, n);
+                fprintf('      Standard eigenvalues are strictly UNDEFINED.\n');
+                fprintf('      Analyzing A^T*A and A*A^T instead...\n');
+            end
+            
+            % 1. Analyze A^T * A (Right Singular Vectors)
+            AtA = transpose(A_sym) * A_sym;
+            fprintf('\n--- 1. Right Singular Matrix (V) from A^T * A ---\n');
+            [V, D_AtA] = eig(AtA);
+            disp(simplify(V));
+            
+            % 2. Analyze A * A^T (Left Singular Vectors)
+            AAt = A_sym * transpose(A_sym);
+            fprintf('\n--- 2. Left Singular Matrix (U) from A * A^T ---\n');
+            [U, ~] = eig(AAt);
+            disp(simplify(U));
+            
+            % 3. Extract Singular Values (Sigma)
+            fprintf('\n--- 3. Non-Zero Singular Values (σ) ---\n');
+            fprintf('       (Square roots of the non-zero eigenvalues)\n');
+            
+            evals = diag(D_AtA);
+            % Filter for non-zero eigenvalues (handling symbolic floating point quirks)
+            non_zero_evals = evals(evals > 1e-10); 
+            sigma = simplify(sqrt(non_zero_evals));
+            
+            disp(sigma);
+            fprintf('==================================================\n\n');
+        end
         
         function v2 = getGeneralisedEigenvector(obj, A, lambda)
             [rows, cols] = size(A);
@@ -622,6 +815,7 @@ classdef MA1508E
         end
 
         % Chapter 7: System of Linear Differential Equations
+
         function y0 = generateInitialConditions(obj, n)
             % Prompts user for initial values at t=0 and returns a column vector
             fprintf('\n--- Entering Initial Conditions for y(0) ---\n');
