@@ -148,40 +148,6 @@ classdef MA1508E
             end
         end
 
-        % Chapter 2: Matrices
-
-        function LI = leftInverse(~, A)
-            [rows, cols] = size(A);
-            if rows < cols 
-                fprintf("The matrix does not have a left inverse!\n");
-                return;
-            end
-            if rows == cols
-                fprintf("The matrix is square, its inverse is:\n");
-                LI = inv(A);
-                return
-            end
-            
-            fprintf("The left inverse of the matrix exists.\n")
-            LI = inv(A' * A) * A';
-        end
-
-        function RI = rightInverse(~, A)
-            [rows, cols] = size(A);
-            if rows > cols 
-                fprintf("The matrix does not have a right inverse!\n");
-                return;
-            end
-            if rows == cols
-                fprintf("The matrix is square, its inverse is:\n");
-                disp(inv(A));
-                return
-            end
-            
-            fprintf("The right inverse of the matrix exists.\n")
-            RI = A' * inv(A * A');
-        end
-
         function E = getRowTransformation(obj, A, B)
             % Finds the transformation matrix E that represents the sequence of 
             % elementary row operations to turn A into B, such that E*A = B.
@@ -312,6 +278,8 @@ classdef MA1508E
             fprintf('==================================================\n\n');
         end
 
+        % Chapter 2: Matrices
+
         function check = isSquare(~, A)
             % Evaluates if a matrix is square based purely on its dimensions
             arguments
@@ -406,42 +374,6 @@ classdef MA1508E
                 fprintf('  2. If the dimension is odd, the determinant is zero.\n');
             else
                 fprintf('  [!] Matrix is NEITHER symmetric nor skew-symmetric.\n');
-            end
-            fprintf('==================================================\n\n');
-        end
-
-        function checkOrthogonal(obj, A)
-            % Evaluates if a matrix is orthogonal (A^T = A^-1)
-            arguments
-                obj;
-                A;
-            end
-            
-            [rows, cols] = size(A);
-            if rows ~= cols
-                fprintf('  [!] Dimension Error: Matrix is %dx%d. Orthogonality requires a square matrix.\n', rows, cols);
-                return;
-            end
-            
-            A_sym = sym(A);
-            I = sym(eye(rows));
-            
-            fprintf('\n==================================================\n');
-            fprintf('             ORTHOGONALITY ANALYSIS               \n');
-            fprintf('==================================================\n');
-            
-            % A matrix is orthogonal if A^T * A = I. 
-            % We use this instead of A^T == A^-1 because calculating inverses is slow and prone to symbolic errors.
-            if isequal(simplify(transpose(A_sym) * A_sym), I)
-                fprintf('  [v] Matrix is ORTHOGONAL (A^T = A^-1).\n\n');
-                fprintf('  PROVEN THEORETICAL RELATIONSHIPS:\n');
-                fprintf('  1. The columns form an orthonormal basis for R^%d.\n', rows);
-                fprintf('  2. The rows form an orthonormal basis for R^%d.\n', rows);
-                fprintf('  3. The determinant is exactly %s.\n', char(det(A_sym)));
-                fprintf('  4. The transformation preserves lengths (||Ax|| = ||x||).\n');
-                fprintf('  5. The transformation preserves angles (Ax · Ay = x · y).\n');
-            else
-                fprintf('  [!] Matrix is NOT orthogonal (A^T ≠ A^-1).\n');
             end
             fprintf('==================================================\n\n');
         end
@@ -638,8 +570,93 @@ classdef MA1508E
             disp(A_C);
             fprintf('==================================================\n\n');
         end
+
+        % Chapter 4: Subspaces
+
+        function LI = leftInverse(~, A)
+            [rows, cols] = size(A);
+            if rows < cols 
+                fprintf("The matrix does not have a left inverse!\n");
+                return;
+            end
+            if rows == cols
+                fprintf("The matrix is square, its inverse is:\n");
+                LI = inv(A);
+                return
+            end
+            
+            fprintf("The left inverse of the matrix exists.\n")
+            LI = inv(A' * A) * A';
+        end
+
+        function RI = rightInverse(~, A)
+            [rows, cols] = size(A);
+            if rows > cols 
+                fprintf("The matrix does not have a right inverse!\n");
+                return;
+            end
+            if rows == cols
+                fprintf("The matrix is square, its inverse is:\n");
+                disp(inv(A));
+                return
+            end
+            
+            fprintf("The right inverse of the matrix exists.\n")
+            RI = A' * inv(A * A');
+        end
         
+        function getMatrixSpaces(~, A)
+            % Finds the basis for Col(A), Row(A), and Null(A)
+            A_sym = sym(A);
+            [R, pivots] = rref(A);
+            
+            fprintf('\n--- COLUMN SPACE BASIS (Pivot Columns of A) ---\n');
+            disp(A_sym(:, pivots));
+            
+            fprintf('--- ROW SPACE BASIS (Non-zero rows of RREF) ---\n');
+            disp(R(1:length(pivots), :));
+            
+            fprintf('--- NULL SPACE BASIS (Solution to Ax = 0) ---\n');
+            disp(null(A_sym));
+        end
+
         % Chapter 5: Orthogonal Projection
+
+        function checkOrthogonal(obj, A)
+            % Evaluates if a matrix is orthogonal (A^T = A^-1)
+            arguments
+                obj;
+                A;
+            end
+            
+            [rows, cols] = size(A);
+            if rows ~= cols
+                fprintf('  [!] Dimension Error: Matrix is %dx%d. Orthogonality requires a square matrix.\n', rows, cols);
+                return;
+            end
+            
+            A_sym = sym(A);
+            I = sym(eye(rows));
+            
+            fprintf('\n==================================================\n');
+            fprintf('             ORTHOGONALITY ANALYSIS               \n');
+            fprintf('==================================================\n');
+            
+            % A matrix is orthogonal if A^T * A = I. 
+            % We use this instead of A^T == A^-1 because calculating inverses is slow and prone to symbolic errors.
+            if isequal(simplify(transpose(A_sym) * A_sym), I)
+                fprintf('  [v] Matrix is ORTHOGONAL (A^T = A^-1).\n\n');
+                fprintf('  PROVEN THEORETICAL RELATIONSHIPS:\n');
+                fprintf('  1. The columns form an orthonormal basis for R^%d.\n', rows);
+                fprintf('  2. The rows form an orthonormal basis for R^%d.\n', rows);
+                fprintf('  3. The determinant is exactly %s.\n', char(det(A_sym)));
+                fprintf('  4. The transformation preserves lengths (||Ax|| = ||x||).\n');
+                fprintf('  5. The transformation preserves angles (Ax · Ay = x · y).\n');
+            else
+                fprintf('  [!] Matrix is NOT orthogonal (A^T ≠ A^-1).\n');
+            end
+            fprintf('==================================================\n\n');
+        end
 
         function res = isOrthogonalSet(obj, S)    
             [~, w] = size(S);
@@ -805,6 +822,18 @@ classdef MA1508E
             fprintf("The Orthogonal Basis for the subspace is:\n");
             disp(orthoBasis);
         end
+
+        function P = getProjectionMatrix(~, A)
+            % Returns the projection matrix P = A(A^T A)^-1 A^T
+            A_sym = sym(A);
+            % Use transpose() for symbolic compatibility
+            P = A_sym * inv(transpose(A_sym) * A_sym) * transpose(A_sym);
+            P = simplify(P);
+            
+            fprintf('\n--- Projection Matrix (P) ---\n');
+            disp(P);
+            fprintf('Properties: P^2 = P and P^T = P\n');
+        end
         
         function [x_gen, basis, x_p] = calcLSS(obj, A, b)
             % 1. Symbolic Conversion
@@ -965,6 +994,72 @@ classdef MA1508E
             end
         end
 
+        function checkDiagonalizable(obj, A)
+            fprintf('\n==================================================\n');
+            fprintf('          DIAGONALIZABILITY DIAGNOSTIC            \n');
+            fprintf('==================================================\n');
+            
+            A_sym = sym(A);
+            % Get ALL eigenvalues including repetitions
+            full_evals = eig(A_sym);
+            % Get unique eigenvalues to loop through
+            unique_evals = unique(full_evals);
+            
+            is_diag = true;
+            for i = 1:length(unique_evals)
+                curr_lambda = unique_evals(i);
+                
+                % --- FIX: Use isAlways for symbolic comparison ---
+                % This correctly counts multiplicities
+                curr_am = sum(isAlways(full_evals == curr_lambda));
+                
+                % Geometric Multiplicity (Dimension of Null Space)
+                [V, ~] = obj.getEigenvector(A_sym, curr_lambda, false);
+                [~, curr_gm] = size(V);
+                
+                fprintf('λ = %s:\n', char(curr_lambda));
+                fprintf('  ➜ Algebraic Multiplicity (AM): %d\n', curr_am);
+                fprintf('  ➜ Geometric Multiplicity (GM): %d\n', curr_gm);
+                
+                if curr_am ~= curr_gm
+                    fprintf('  [!] DEFECTIVE: AM > GM. This eigenvalue prevents diagonalization.\n');
+                    is_diag = false;
+                else
+                    fprintf('  [v] Healthy: AM = GM.\n');
+                end
+            end
+            
+            if is_diag
+                fprintf('\nCONCLUSION: Matrix is DIAGONALIZABLE.\n');
+            else
+                fprintf('\nCONCLUSION: Matrix is NOT diagonalizable (Defective).\n');
+            end
+            fprintf('==================================================\n\n');
+        end
+
+        function q = solveMarkovSteadyState(~, P)
+            % Finds the steady-state vector q for a transition matrix P
+            % Solves (P - I)q = 0 and normalizes so sum(q) = 1
+            [n, ~] = size(P);
+            P_sym = sym(P);
+            
+            % Solve the homogeneous system (P - I)x = 0
+            M = P_sym - eye(n);
+            v = null(M); 
+            
+            if isempty(v)
+                fprintf('[!] Error: No steady state found. Is this a valid Stochastic Matrix?\n');
+                return;
+            end
+            
+            % Normalize so the sum of components is 1
+            q = simplify(v / sum(v));
+            
+            fprintf('\n--- Markov Chain Steady-State Vector (q) ---\n');
+            disp(q);
+            fprintf('Sum of components: %s\n', char(sum(q)));
+        end
+
         function computeSVD(obj, A)
             % Analyzes the Singular Value Decomposition components for any m x n matrix
             arguments
@@ -1011,7 +1106,9 @@ classdef MA1508E
             disp(sigma);
             fprintf('==================================================\n\n');
         end
-        
+
+        % Chapter 7: System of Linear Differential Equations
+
         function v2 = getGeneralisedEigenvector(obj, A, lambda)
             [rows, cols] = size(A);
             if rows ~= cols
@@ -1042,8 +1139,6 @@ classdef MA1508E
             fprintf("By setting free variables to 0, a valid generalised eigenvector is:\n");
             disp(v2);
         end
-
-        % Chapter 7: System of Linear Differential Equations
 
         function y0 = generateInitialConditions(obj, n)
             % Prompts user for initial values at t=0 and returns a column vector
