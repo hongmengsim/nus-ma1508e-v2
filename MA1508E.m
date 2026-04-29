@@ -673,19 +673,48 @@ classdef MA1508E
             RI = A' * inv(A * A');
         end
         
-        function getMatrixSpaces(~, A)
-            % Finds the basis for Col(A), Row(A), and Null(A)
-            A_sym = sym(A);
-            [R, pivots] = rref(A);
+        function getMatrixSpaces(obj, A)
+            % Instantly extracts the exact basis vectors for the three fundamental spaces
             
-            fprintf('\n--- COLUMN SPACE BASIS (Pivot Columns of A) ---\n');
-            disp(A_sym(:, pivots));
+            % 1. Convert to symbolic explicitly to force fractional outputs
+            A_sym = sym(A);
+            
+            fprintf('\n==================================================\n');
+            fprintf('              MATRIX SPACES ANALYSIS                \n');
+            fprintf('==================================================\n');
+            
+            % --- COLUMN SPACE ---
+            % Find pivot columns using the numeric rref to get indices
+            [~, pivotCols] = rref(double(A_sym)); 
+            fprintf('--- COLUMN SPACE BASIS (Pivot Columns of A) ---\n');
+            disp(A_sym(:, pivotCols));
+            
+            % --- ROW SPACE ---
+            % Calculate symbolic RREF to preserve fractions
+            R_sym = rref(A_sym);
+            
+            % Extract non-zero rows
+            % A row is non-zero if not all of its elements are identically zero
+            nonZeroRows = [];
+            for i = 1:size(R_sym, 1)
+                if ~isequal(R_sym(i, :), sym(zeros(1, size(R_sym, 2))))
+                    nonZeroRows = [nonZeroRows; R_sym(i, :)]; %#ok<AGROW>
+                end
+            end
             
             fprintf('--- ROW SPACE BASIS (Non-zero rows of RREF) ---\n');
-            disp(R(1:length(pivots), :));
+            disp(nonZeroRows);
             
+            % --- NULL SPACE ---
             fprintf('--- NULL SPACE BASIS (Solution to Ax = 0) ---\n');
-            disp(null(A_sym));
+            ns = null(A_sym);
+            if isempty(ns)
+                fprintf('[!] The Null Space contains only the zero vector {0}.\n');
+            else
+                disp(ns);
+            end
+            
+            fprintf('==================================================\n\n');
         end
 
         % Chapter 5: Orthogonal Projection
