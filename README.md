@@ -146,62 +146,6 @@ The console input parser requires specific formatting. Use the letter `R` follow
 </details>
 
 <details>
-<summary><mark><code>solveSystem(A, b)</code></mark></summary>
-
-### Solves the system $A\mathbf{x} = \mathbf{b}$ and returns the exact parametric general solution.
-This is the primary tool for Chapter 1 and Chapter 3 "Solve the system" problems. It automatically identifies if a system is inconsistent, has a unique solution, or has infinite solutions.
-
-#### Mathematical Logic
-The function identifies the **Particular Solution** ($\mathbf{x}_p$) by setting all free variables to zero and then finds the basis for the **Null Space** (the homogeneous solution). The result is formatted as the geometric translation of a subspace:
-$$\mathbf{x} = \mathbf{x}_p + s_1\mathbf{v}_1 + \dots + s_k\mathbf{v}_k$$
-
-#### Parameters
-* **`A`**: The $m \times n$ coefficient matrix.
-* **`b`**: The $m \times 1$ constant vector.
-
-#### 🛠 Usage Example
-```matlab
-% A system with one free variable
-A = [1, 1, 1; 
-     1, 0, 1];
-b = [3; 
-     2];
-
-[x_gen, basis, x_p] = tk.solveSystem(A, b);
-
-% Output:
-% Particular Solution (x_p):
-%      2
-%      1
-%      0
-% Null Space Basis (v_i):
-%     -1
-%      0
-%      1
-% General Equation: x = x_p + s1*v1
-```
-</details>
-
-### Chapter 2: Matrices
-<details>
-<summary><code>leftInverse(A)</code></summary>
-
-- **`A`**: $m \times n$ matrix to check.
-- **Description**: Returns the left inverse of $A$ if it exists. 
-- **Condition**: $m > n$ for left inverse to exist.
-</details>
-
-<details>
-<summary><code>rightInverse(A)</code></summary>
-
-- **`A`**: $m \times n$ matrix to check.
-- **Description**: Returns the right inverse of $A$ if it exists. 
-- **Condition**: $m < n$ for right inverse to exist.
-</details>
-
-=======
->>>>>>> 9997864dee5807038114e6e6b9be7f641e408479
-<details>
 <summary><mark><code>getRowTransformation(A, B)</code></mark></summary>
 
 ### Determines if two matrices are row-equivalent and calculates the exact transformation matrix $E$ such that $EA = B$. 
@@ -241,6 +185,55 @@ E = tk.getRowTransformation(A, B);
 % Step 3: Add to Row 3 ( R3 = R3 + (2)*R2 )
 
 % [v] Verification Check: isequal(E * A, B) -> TRUE
+```
+</details>
+
+<details>
+<summary><mark><code>solveSystem(A, b)</code></mark></summary>
+
+### Solves the system $A\mathbf{x} = \mathbf{b}$ and returns the exact parametric general solution.
+This is the primary tool for Chapter 1 and Chapter 3 "Solve the system" problems. It automatically identifies if a system is inconsistent, has a unique solution, or has infinite solutions.
+
+#### Mathematical Logic
+The function identifies the **Particular Solution** ($\mathbf{x}_p$) by setting all free variables to zero. It then calculates the **Null Space Basis** (the homogeneous solution). The result is formatted as a geometric translation of a subspace:
+
+$$\mathbf{x} = \mathbf{x}_p + s_1\mathbf{v}_1 + s_2\mathbf{v}_2 + \dots + s_k\mathbf{v}_k$$
+
+#### Parameters
+* **`A`**: The $m \times n$ coefficient matrix.
+* **`b`**: The $m \times 1$ constant vector.
+
+#### Returns
+* **`x_gen`**: The full symbolic general solution.
+* **`basis`**: A matrix where each **column** is a basis vector $\mathbf{v}_i$.
+* **`x_p`**: The particular solution vector.
+
+#### 🛠 Usage Example
+```matlab
+% A system with one free variable
+A = [1, 1, 1; 
+     1, 0, 1];
+b = [3; 
+     2];
+
+[x_gen, basis, x_p] = tk.solveSystem(A, b);
+
+% --- Terminal Output ---
+% ==================================================
+%           PARAMETRIC SYSTEM SOLUTION              
+% ==================================================
+% RESULT: Infinite Solutions (Parametric Form)
+% Particular Solution (x_p):
+%      2
+%      1
+%      0
+% Null Space Basis (v_i):
+%     -1
+%      0
+%      1
+% --------------------------------------------------
+% General Equation: x = x_p + s1*v1
+% ==================================================
 ```
 </details>
 
