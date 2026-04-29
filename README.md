@@ -1,13 +1,13 @@
-# MATLAB for Linear Algebra (V2)
+# MATLAB for Linear Algebra (V2.1)
 
-## What's New in V2
-This toolkit has been upgraded for the AY25/26 semester to prioritize mathematical accuracy and ease of use for NUS Engineering students.
-* **Symbolic Math Integration:** Methods now natively support and return `sym` objects, providing exact fractional results (e.g., `1/3`) instead of messy floating-point decimals.
+## What's New in V2.1
+This toolkit has been synchronized with the **MA1508E Finals Syllabus** to prioritize theoretical diagnostics and exam-ready symbolic results.
+* **Syllabus Alignment:** Functions are now partitioned into 7 distinct chapters to perfectly match the official NUS engineering curriculum progression.
+* **LU-Based Row Analysis:** `getRowTransformation` now performs a full LU decomposition ($E = P^T L U$) to reverse-engineer discrete, step-by-step row operations.
+* **Subspace Diagnostic Suite:** Added `getMatrixSpaces` to instantly extract the exact basis for the Column, Row, and Null spaces.
+* **Theoretical Provers:** New automated modules for `checkDiagonalizable` (comparing AM vs. GM) and `solveMarkovSteadyState`.
+* **Symbolic Stability:** Enhanced use of `isAlways()` for eigenvalue comparisons to prevent floating-point truncation errors in complex systems.
 * **Step-by-Step Outputs:** Functions like `gramSchmidt` now provide the exact algebraic working, intermediate projections, and inner products for exam verification.
-* **Subspace Extraction:** Added a new utility to automatically find a linearly independent basis for the span of any given set of vectors.
-* **Chapter 7 Visualizer:** Added a Phase Portrait plotter to easily identify Sinks, Sources, Saddles, and Spirals geometrically.
-* **Rigorous QR Decomposition:** Upgraded `gramSchmidt` to the Modified Gram-Schmidt algorithm, ensuring the $R$ matrix is strictly upper-triangular and $V = QR$ reconstruction is successful.
-* **Parametric LSS Solver:** The Least Squares solver now identifies infinite solution spaces and formats them as $\mathbf{x} = \mathbf{x}_p + s_1 \mathbf{v}_1 + \dots$
 
 ## Setup 
 *Note: This toolkit requires the **Symbolic Math Toolbox** to be installed in your MATLAB Add-Ons.*
@@ -146,23 +146,6 @@ The console input parser requires specific formatting. Use the letter `R` follow
 ```
 </details>
 
-### Chapter 2: Matrices
-<details>
-<summary><code>leftInverse(A)</code></summary>
-
-- **`A`**: $m \times n$ matrix to check.
-- **Description**: Returns the left inverse of $A$ if it exists. 
-- **Condition**: $m > n$ for left inverse to exist.
-</details>
-
-<details>
-<summary><code>rightInverse(A)</code></summary>
-
-- **`A`**: $m \times n$ matrix to check.
-- **Description**: Returns the right inverse of $A$ if it exists. 
-- **Condition**: $m < n$ for right inverse to exist.
-</details>
-
 <details>
 <summary><mark><code>getRowTransformation(A, B)</code></mark></summary>
 
@@ -203,6 +186,39 @@ E = tk.getRowTransformation(A, B);
 % Step 3: Add to Row 3 ( R3 = R3 + (2)*R2 )
 
 % [v] Verification Check: isequal(E * A, B) -> TRUE
+```
+</details>
+
+### Chapter 2: Matrices
+
+<details>
+<summary><mark><code>isSquare(A)</code></mark></summary>
+
+### A quick diagnostic tool to evaluate if a matrix is square ($m = n$).
+This is highly useful to run before attempting dimension-restricted operations (like finding determinants, eigenvalues, or the Invertible Matrix Theorem).
+
+#### Parameters
+* **`A`**: The matrix to check.
+
+#### 🛠 Usage Example
+```matlab
+% Define a rectangular 2x3 matrix
+A = [1, 2, 3; 
+     4, 5, 6];
+
+tk.isSquare(A);
+
+% Output:
+%   [!] Matrix is NOT square (2 x 3).
+
+% Define a square 2x2 matrix
+B = [1, 2; 
+     3, 4];
+
+tk.isSquare(B);
+
+% Output:
+%   [v] Matrix is square (2 x 2).
 ```
 </details>
 
@@ -253,30 +269,121 @@ tk.checkSymmetry(A_Sym);
 ``` 
 </details>
 
-<details>
-<summary><code>checkOrthogonal(A)</code></summary>
+### Chapter 3: Vector Spaces & Change of Basis
 
-Evaluates whether a matrix is Orthogonal. Rather than relying on computationally heavy matrix inverses, this function uses the core definition A<sup>T</sup>A = I to prove the relationship A<sup>T</sup> = A<sup>-1</sup>. 
+<details>
+<summary><mark><code>isInSpan(S, v)</code></mark></summary>
+
+### Proves whether a specific vector $\mathbf{v}$ exists within the subspace spanned by the set $S$. 
+It determines this mathematically by comparing the rank of the spanning set against the rank of the augmented matrix: $Rank(S) = Rank([S, \mathbf{v}])$. If the ranks are equal, the vector is in the span.
 
 #### Parameters
-* **`A`**: The square matrix to be evaluated.
+* **`S`**: A matrix where the columns represent the vectors in the spanning set.
+* **`v`**: The target column vector you want to check.
 
 #### 🛠 Usage Example
 ```matlab
-% A 2D Rotation Matrix (which is always orthogonal)
-A_Rot = [ 0, 1; 
-         -1, 0];
+% Define the spanning set S (e.g., the XY plane in R^3)
+S = [1, 0; 
+     0, 1; 
+     0, 0];
 
-tk.checkOrthogonal(A_Rot);
+% Define the target vector v
+v = [5; 
+     5; 
+     0];
 
-% Output will prove:
-% - A^T = A^-1
-% - Columns/Rows form orthonormal bases
-% - Lengths and angles are preserved
+% Check if v is in the span of S
+tk.isInSpan(S, v);
+
+% Output:
+% ==================================================
+%                  SPAN ANALYSIS                    
+% ==================================================
+%   [v] The vector IS in the span.
+%       Rank(S) = 2 matches Rank([S, v]) = 2.
+% ==================================================
 ```
 </details>
 
-### Chapter 3: Vector Spaces & Change of Basis
+<details>
+<summary><mark><code>compareSubspaces(U, W)</code></mark></summary>
+
+### Analyzes two subspaces to determine their relationship. 
+Proves if $U \subseteq W$, $W \subseteq U$, or if $U = W$ by calculating and comparing their individual dimensional ranks against the rank of their union span ($Rank([U, W])$).
+
+#### Parameters
+* **`U`**: A matrix where the columns represent the spanning set for Subspace U.
+* **`W`**: A matrix where the columns represent the spanning set for Subspace W.
+
+#### 🛠 Usage Example
+```matlab
+% Let U be the 1D X-axis
+U = [1; 
+     0; 
+     0]; 
+
+% Let W be the 2D XY-Plane
+W = [1, 0; 
+     0, 1; 
+     0, 0];
+
+% Compare the two subspaces
+tk.compareSubspaces(U, W);
+
+% Output:
+% ==================================================
+%               SUBSPACE CONTAINMENT                
+% ==================================================
+%   ➜ Dimension of U: 1
+%   ➜ Dimension of W: 2
+%   ➜ Dimension of Union Span [U, W]: 2
+%
+%   [v] U is a PROPER SUBSPACE of W (U ⊂ W).
+%       Every vector in U can be built using vectors from W.
+% ==================================================
+```
+</details>
+
+<details>
+<summary><mark><code>intersectSubspaces(U, W)</code></mark></summary>
+
+### Calculates the exact basis vectors that form the intersection of two subspaces ($U \cap W$). 
+It achieves this by solving the homogeneous system $U\mathbf{x} - W\mathbf{y} = \mathbf{0}$ using the null space of the concatenated block matrix $[U, -W]$. This represents the vectors that can be simultaneously expressed as a linear combination of the columns of $U$ and the columns of $W$.
+
+
+
+#### Parameters
+* **`U`**: A matrix where the columns represent the spanning set for Subspace U.
+* **`W`**: A matrix where the columns represent the spanning set for Subspace W.
+
+#### 🛠 Usage Example
+```matlab
+% Let U be the 2D XY-Plane in R^3
+U = [1, 0; 
+     0, 1; 
+     0, 0]; 
+
+% Let W be the 2D YZ-Plane in R^3
+W = [0, 0; 
+     1, 0; 
+     0, 1];
+
+% Find the basis for the intersection (U ∩ W)
+basis = tk.intersectSubspaces(U, W);
+
+% Output:
+% ==================================================
+%             SUBSPACE INTERSECTION                
+% ==================================================
+%   [v] The intersection is a subspace of dimension 1.
+%   ➜ Basis for the intersection:
+%      0
+%      1
+%      0
+% ==================================================
+```
+</details>
 
 <details>
 <summary><code>isBasis(V)</code></summary>
@@ -368,7 +475,92 @@ A_Diag = tk.similarityTransform(A_Standard, E, B_Eigen);
 ```
 </details>
 
+### Chapter 4: Subspaces
+
+<details>
+<summary><code>leftInverse(A)</code></summary>
+
+- **`A`**: $m \times n$ matrix to check.
+- **Description**: Returns the left inverse of $A$ if it exists. 
+- **Condition**: $m > n$ for left inverse to exist.
+</details>
+
+<details>
+<summary><code>rightInverse(A)</code></summary>
+
+- **`A`**: $m \times n$ matrix to check.
+- **Description**: Returns the right inverse of $A$ if it exists. 
+- **Condition**: $m < n$ for right inverse to exist.
+</details>
+
+<details>
+<summary><mark><code>getMatrixSpaces(A)</code></mark></summary>
+
+### Instantly extracts the exact basis vectors for the fundamental spaces associated with a matrix.
+This diagnostic tool identifies the spanning vectors for the three primary subspaces defined in Chapter 4 of the MA1508E syllabus. It is the fastest way to solve "Find a basis for..." problems.
+
+#### The Three Spaces:
+1. **Column Space ($Col \ A$):** The set of all linear combinations of the columns. The basis is formed using the **pivot columns** of the original matrix $A$.
+2. **Row Space ($Row \ A$):** The set of all linear combinations of the rows. The basis is formed by the **non-zero rows** of the RREF of $A$.
+3. **Null Space ($Null \ A$):** The set of all solutions to the homogeneous system $A\mathbf{x} = \mathbf{0}$.
+
+
+
+#### Parameters
+* **`A`**: The matrix to analyze.
+
+#### 🛠 Usage Example
+```matlab
+% Define a matrix with linear dependencies (Rank 2)
+A = [1, 2,  0, 1; 
+     0, 1,  1, 0; 
+     1, 1, -1, 1];
+
+tk.getMatrixSpaces(A);
+
+% Output:
+% --- COLUMN SPACE BASIS (Pivot Columns of A) ---
+%      1     2
+%      0     1
+%      1     1
+%
+% --- ROW SPACE BASIS (Non-zero rows of RREF) ---
+%      1     0    -2     1
+%      0     1     1     0
+%
+% --- NULL SPACE BASIS (Solution to Ax = 0) ---
+%      2    -1
+%     -1     0
+%      1     0
+%      0     1
+```
+</details>
+
 ### Chapter 5: Orthogonal Projection
+
+<details>
+<summary><code>checkOrthogonal(A)</code></summary>
+
+Evaluates whether a matrix is Orthogonal. Rather than relying on computationally heavy matrix inverses, this function uses the core definition A<sup>T</sup>A = I to prove the relationship A<sup>T</sup> = A<sup>-1</sup>. 
+
+#### Parameters
+* **`A`**: The square matrix to be evaluated.
+
+#### 🛠 Usage Example
+```matlab
+% A 2D Rotation Matrix (which is always orthogonal)
+A_Rot = [ 0, 1; 
+         -1, 0];
+
+tk.checkOrthogonal(A_Rot);
+
+% Output will prove:
+% - A^T = A^-1
+% - Columns/Rows form orthonormal bases
+% - Lengths and angles are preserved
+```
+</details>
+
 <details>
 <summary><code>isOrthogonalSet(S)</code> / <code>isOrthonormalSet(S)</code></summary>
 
@@ -474,6 +666,77 @@ A_Diag = tk.similarityTransform(A_Standard, E, B_Eigen);
 </details>
 
 <details>
+<summary><mark><code>getOrthogonalBasis(A)</code></mark></summary>
+
+### Converts any basis into an orthogonal basis for the same subspace.
+This function is a high-level wrapper for the Gram-Schmidt process. It automatically identifies the linearly independent pivot columns of a matrix $A$ to establish a starting basis, and then orthogonalizes them. This is the standard procedure for "Find an orthogonal basis for the subspace $W = Span\{v_1, \dots, v_n\}$" problems.
+
+
+
+#### Parameters
+* **`A`**: A matrix whose columns span the target subspace. The matrix does not need to be square.
+
+#### 🛠 Usage Example
+```matlab
+% Define a spanning set for a plane in R^3
+A = [1, 1; 
+     1, 0; 
+     0, 1];
+
+% Find an orthogonal basis for this subspace
+orthoBasis = tk.getOrthogonalBasis(A);
+
+% Output:
+% The original subspace is defined by pivot columns: 1  2
+% The linearly independent basis for this subspace is:
+%      1     1
+%      1     0
+%      0     1
+%
+% ==================================================
+%        GRAM-SCHMIDT ORTHONORMALIZATION        
+% ==================================================
+% ... (Calculates orthogonal vectors)
+%
+% The Orthogonal Basis for the subspace is:
+% [ 1/sqrt(2),  1/sqrt(6)]
+% [ 1/sqrt(2), -1/sqrt(6)]
+% [         0,  sqrt(6)/3]
+```
+</details>
+
+<details>
+<summary><mark><code>getProjectionMatrix(A)</code></mark></summary>
+
+### Generates the unique Projection Matrix $P$ for the subspace spanned by the columns of $A$.
+This function calculates the matrix $P = A(A^T A)^{-1}A^T$. Once computed, multiplying any vector $\mathbf{v}$ by $P$ will "drop" that vector onto the subspace spanned by $A$ at a 90-degree angle. This is a fundamental tool for solving approximation problems, finding the component of a vector within a specific plane, or solving the Least Squares problem manually.
+
+[Image of orthogonal projection of a vector onto a subspace]
+
+#### Parameters
+* **`A`**: The matrix whose columns span the target subspace. 
+> [!NOTE]
+> The columns of $A$ must be linearly independent for $(A^T A)$ to be invertible.
+
+#### 🛠 Usage Example
+```matlab
+% Define a subspace (e.g., the line spanned by [1; 1; 0])
+A = [1; 
+     1; 
+     0];
+
+% Calculate the Projection Matrix P
+P = tk.getProjectionMatrix(A);
+
+% --- Projection Matrix (P) ---
+%    1/2   1/2     0
+%    1/2   1/2     0
+%      0     0     0
+% Properties: P^2 = P and P^T = P
+```
+</details>
+
+<details>
 <summary><mark><code>calcLSS(A, b)</code></mark></summary>
 
 - **`A`**: The matrix to calculate the least squares solution.
@@ -550,36 +813,18 @@ A_Diag = tk.similarityTransform(A_Standard, E, B_Eigen);
 ### Chapter 6: Diagonalisation
 
 <details>
-<summary><mark><code>computeSVD(A)</code></mark></summary>
-
-### Performs Singular Value Decomposition (SVD) analysis on any $m \times n$ matrix. 
-
-> [!WARNING]
-> **The Dimension Trap:** Non-square matrices do not have eigenvalues or eigenvectors. If you are asked to analyze the vectors of an $m \times n$ matrix, you must use SVD to analyze $A^T A$ and $A A^T$ instead. This function automates that process.
-
-#### Parameters
-* **`A`**: Any $m \times n$ matrix.
-
-#### 🛠 Usage Example
-```matlab
-% A 2x3 Rectangular Matrix
-A_Rect = [3, 2, 2; 
-          2, 3, -2];
-
-tk.computeSVD(A_Rect);
-
-% Output will automatically bypass standard eigenanalysis and output:
-% - The Right Singular Vectors (from A^T * A)
-% - The Left Singular Vectors (from A * A^T)
-% - The non-zero Singular Values (σ)
-```
-</details>
-
-<details>
 <summary><code>getEigenvalues(A)</code></summary>
 
 - **`A`**: The matrix corresponding to the differential system.
 - **Description**: Returns both real and complex eigenvalues corresponding to `A`.
+</details>
+
+<details>
+<summary><code>isAssociatedEigenvalue(A, lambda)</code></summary>
+
+- **`A`**: The matrix corresponding to the differential system.
+- **`lambda`**: Eigenvalue to verify.
+- **Description**: Returns `true` if lambda is an eigenvalue associated to `A`, `false` otherwise.
 </details>
 
 <details>
@@ -652,12 +897,109 @@ tk.computeSVD(A_Rect);
 </details>
 
 <details>
-<summary><code>isAssociatedEigenvalue(A, lambda)</code></summary>
+<summary><mark><code>checkDiagonalizable(A)</code></mark></summary>
 
-- **`A`**: The matrix corresponding to the differential system.
-- **`lambda`**: Eigenvalue to verify.
-- **Description**: Returns `true` if lambda is an eigenvalue associated to `A`, `false` otherwise.
+### The ultimate "Theory Prover" tool for diagonalizability. 
+This diagnostic tool explicitly evaluates the characteristic equation of a square matrix and compares the **Algebraic Multiplicity (AM)** against the **Geometric Multiplicity (GM)** for every unique eigenvalue. This is the mathematically rigorous way to determine if a matrix is "Defective."
+
+
+
+#### Mathematical Logic
+A matrix $A$ is diagonalizable if and only if the dimensions of its eigenspaces (Geometric Multiplicity) match the number of times each eigenvalue appears as a root of the characteristic polynomial (Algebraic Multiplicity).
+- **Diagonalizable:** $AM = GM$ for all eigenvalues.
+- **Defective:** $AM > GM$ for at least one eigenvalue.
+
+> [!IMPORTANT]
+> This function uses `isAlways()` for symbolic comparison, ensuring that complex or surd-based eigenvalues are compared with 100% mathematical accuracy, avoiding the rounding errors of standard numerical solvers.
+
+#### Parameters
+* **`A`**: The square matrix to analyze.
+
+#### 🛠 Usage Example
+```matlab
+% Define a standard "Jordan Block" (Defective matrix)
+A_bad = [3, 1; 
+         0, 3]; 
+
+tk.checkDiagonalizable(A_bad);
+
+% Output:
+% ==================================================
+%           DIAGONALIZABILITY DIAGNOSTIC            
+% ==================================================
+% λ = 3:
+%   ➜ Algebraic Multiplicity (AM): 2
+%   ➜ Geometric Multiplicity (GM): 1
+%   [!] DEFECTIVE: AM > GM. This eigenvalue prevents diagonalization.
+%
+% CONCLUSION: Matrix is NOT diagonalizable (Defective).
+% ==================================================
+```
 </details>
+
+<details>
+<summary><mark><code>solveMarkovSteadyState(P)</code></mark></summary>
+
+### Finds the steady-state vector $\mathbf{q}$ for a stochastic transition matrix $P$.
+This function identifies the long-term equilibrium of a Markov Chain. A steady-state vector is a probability vector that remains unchanged when multiplied by the transition matrix (i.e., $P\mathbf{q} = \mathbf{q}$). It represents the state the system will eventually settle into, regardless of the initial conditions.
+
+
+
+#### Mathematical Logic
+The steady-state vector is the eigenvector associated with the eigenvalue $\lambda = 1$. The function solves the homogeneous system:
+$$(P - I)\mathbf{q} = \mathbf{0}$$
+Because $\mathbf{q}$ must be a probability vector, the function normalizes the resulting null space basis so that the sum of its components is exactly $1$.
+
+#### Parameters
+* **`P`**: A square, stochastic transition matrix. 
+> [!NOTE]
+> For the result to be valid, the columns of $P$ must sum to 1 (representing total probability).
+
+#### 🛠 Usage Example
+```matlab
+% Define a transition matrix (e.g., population movement between City and Suburbs)
+% Column 1: From City (80% stay, 20% move)
+% Column 2: From Suburbs (10% move, 90% stay)
+P = [0.8, 0.1; 
+     0.2, 0.9];
+
+q = tk.solveMarkovSteadyState(P);
+
+% Output:
+% --- Markov Chain Steady-State Vector (q) ---
+%      1/3
+%      2/3
+% Sum of components: 1
+```
+</details>
+
+<details>
+<summary><mark><code>computeSVD(A)</code></mark></summary>
+
+### Performs Singular Value Decomposition (SVD) analysis on any $m \times n$ matrix. 
+
+> [!WARNING]
+> **The Dimension Trap:** Non-square matrices do not have eigenvalues or eigenvectors. If you are asked to analyze the vectors of an $m \times n$ matrix, you must use SVD to analyze $A^T A$ and $A A^T$ instead. This function automates that process.
+
+#### Parameters
+* **`A`**: Any $m \times n$ matrix.
+
+#### 🛠 Usage Example
+```matlab
+% A 2x3 Rectangular Matrix
+A_Rect = [3, 2, 2; 
+          2, 3, -2];
+
+tk.computeSVD(A_Rect);
+
+% Output will automatically bypass standard eigenanalysis and output:
+% - The Right Singular Vectors (from A^T * A)
+% - The Left Singular Vectors (from A * A^T)
+% - The non-zero Singular Values (σ)
+```
+</details>
+
+### Chapter 7: System of Linear Differential Equations
 
 <details>
 <summary><mark><code>getGeneralisedEigenvector(A, lambda)</code></mark></summary>
@@ -724,11 +1066,8 @@ tk.computeSVD(A_Rect);
   % [ -1]
   % [  0]
   ```
-
   </details>
 </details>
-
-### Chapter 7: System of Linear Differential Equations
 
 <details>
 <summary><mark><code>generateInitialConditions(n)</code></mark></summary>
@@ -767,6 +1106,46 @@ tk.solveDifferentialSystem(A_Rotation);
 
 % Output will display Eigenvalues (i, -i) 
 % and the general trigonometric solution.
+```
+</details>
+
+<details>
+<summary><mark><code>getPD(A)</code></mark></summary>
+
+### Instantly produces the full diagonalization $A = PDP^{-1}$.
+This is the ultimate "shortcut" function for Chapter 6. It decomposes a square matrix into its constituent parts: the diagonal matrix $D$ (containing the eigenvalues) and the change of basis matrix $P$ (containing the corresponding eigenvectors). This is the foundation for calculating high powers of matrices ($A^k = PD^kP^{-1}$) and solving systems of differential equations.
+
+
+
+#### Mathematical Logic
+The function solves for $P$ and $D$ such that the relation $A = PDP^{-1}$ holds. 
+* **Matrix $D$:** A diagonal matrix where $D_{ii}$ are the eigenvalues of $A$.
+* **Matrix $P$:** A matrix whose columns are the linearly independent eigenvectors of $A$.
+
+> [!TIP]
+> **Defective Support:** This function uses MATLAB's `jordan` engine. If the matrix is defective (not diagonalizable), it will return the **Jordan Normal Form** for $D$ and the generalized eigenvectors in $P$, allowing the toolkit to remain robust even in non-ideal cases.
+
+#### Parameters
+* **`A`**: The square matrix to be diagonalized.
+
+#### 🛠 Usage Example
+```matlab
+% Define a symmetric matrix (guaranteed to be diagonalizable)
+A = [2, 1; 
+     1, 2];
+
+[P, D] = tk.getPD(A);
+
+% Output:
+% The Diagonal (or Jordan) matrix 'D' containing eigenvalues:
+% [ 1, 0]
+% [ 0, 3]
+%
+% The Change of Basis matrix 'P' containing exact eigenvectors:
+% [ -1, 1]
+% [  1, 1]
+
+% Verification: P * D * inv(P) will return the original matrix A
 ```
 </details>
 
