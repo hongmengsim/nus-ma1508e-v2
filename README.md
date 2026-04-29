@@ -1,21 +1,20 @@
-# MATLAB for Linear Algebra (V2)
+# MATLAB for Linear Algebra (V2.1)
 
-## What's New in V2
-This toolkit has been upgraded for the AY25/26 semester to prioritize mathematical accuracy and ease of use for NUS Engineering students.
-* **Symbolic Math Integration:** Methods now natively support and return `sym` objects, providing exact fractional results (e.g., `1/3`) instead of messy floating-point decimals.
+## What's New in V2.1
+This toolkit has been synchronized with the **MA1508E Finals Syllabus** to prioritize theoretical diagnostics and exam-ready symbolic results.
+* **Syllabus Alignment:** Functions are now partitioned into 7 distinct chapters to perfectly match the official NUS engineering curriculum progression.
+* **LU-Based Row Analysis:** `getRowTransformation` now performs a full LU decomposition ($E = P^T L U$) to reverse-engineer discrete, step-by-step row operations.
+* **Subspace Diagnostic Suite:** Added `getMatrixSpaces` to instantly extract the exact basis for the Column, Row, and Null spaces.
+* **Theoretical Provers:** New automated modules for `checkDiagonalizable` (comparing AM vs. GM) and `solveMarkovSteadyState`.
+* **Symbolic Stability:** Enhanced use of `isAlways()` for eigenvalue comparisons to prevent floating-point truncation errors in complex systems.
 * **Step-by-Step Outputs:** Functions like `gramSchmidt` now provide the exact algebraic working, intermediate projections, and inner products for exam verification.
-* **Subspace Extraction:** Added a new utility to automatically find a linearly independent basis for the span of any given set of vectors.
-* **Chapter 7 Visualizer:** Added a Phase Portrait plotter to easily identify Sinks, Sources, Saddles, and Spirals geometrically.
-* **Rigorous QR Decomposition:** Upgraded `gramSchmidt` to the Modified Gram-Schmidt algorithm, ensuring the $R$ matrix is strictly upper-triangular and $V = QR$ reconstruction is successful.
-* **Parametric LSS Solver:** The Least Squares solver now identifies infinite solution spaces and formats them as $\mathbf{x} = \mathbf{x}_p + s_1 \mathbf{v}_1 + \dots$
 
 ## Setup 
 *Note: This toolkit requires the **Symbolic Math Toolbox** to be installed in your MATLAB Add-Ons.*
 
 ```sh
-git clone https://github.com/hongmengsim/nus-ma1508e-v2.git
+git clone [https://github.com/hongmengsim/nus-ma1508e-v2.git](https://github.com/hongmengsim/nus-ma1508e-v2.git)
 cd nus-ma1508e-v2
-```
 Usage
 Initialise the class instance in your Command Window:
 ```MATLAB
@@ -143,6 +142,43 @@ The console input parser requires specific formatting. Use the letter `R` follow
 >> m = MA1508E();
 >> A = sym([1 2 3; 2 4 8]);
 >> m.performERO(A);
+```
+</details>
+
+<details>
+<summary><mark><code>solveSystem(A, b)</code></mark></summary>
+
+### Solves the system $A\mathbf{x} = \mathbf{b}$ and returns the exact parametric general solution.
+This is the primary tool for Chapter 1 and Chapter 3 "Solve the system" problems. It automatically identifies if a system is inconsistent, has a unique solution, or has infinite solutions.
+
+#### Mathematical Logic
+The function identifies the **Particular Solution** ($\mathbf{x}_p$) by setting all free variables to zero and then finds the basis for the **Null Space** (the homogeneous solution). The result is formatted as the geometric translation of a subspace:
+$$\mathbf{x} = \mathbf{x}_p + s_1\mathbf{v}_1 + \dots + s_k\mathbf{v}_k$$
+
+#### Parameters
+* **`A`**: The $m \times n$ coefficient matrix.
+* **`b`**: The $m \times 1$ constant vector.
+
+#### 🛠 Usage Example
+```matlab
+% A system with one free variable
+A = [1, 1, 1; 
+     1, 0, 1];
+b = [3; 
+     2];
+
+[x_gen, basis, x_p] = tk.solveSystem(A, b);
+
+% Output:
+% Particular Solution (x_p):
+%      2
+%      1
+%      0
+% Null Space Basis (v_i):
+%     -1
+%      0
+%      1
+% General Equation: x = x_p + s1*v1
 ```
 </details>
 

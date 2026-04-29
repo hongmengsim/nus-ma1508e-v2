@@ -278,6 +278,74 @@ classdef MA1508E
             fprintf('==================================================\n\n');
         end
 
+        function [x_gen, basis, x_p] = solveSystem(obj, A, b)
+            % Solves Ax = b and returns the parametric general solution
+            A_sym = sym(A);
+            b_sym = sym(b);
+            [rows, cols] = size(A_sym);
+            
+            % 1. Form Augmented Matrix and find RREF
+            Aug = [A_sym, b_sym];
+            R = rref(Aug);
+            
+            % 2. Check for Consistency
+            consistent = true;
+            for i = 1:size(R, 1)
+                if all(R(i, 1:end-1) == 0) && R(i, end) ~= 0
+                    consistent = false;
+                    break;
+                end
+            end
+            
+            if ~consistent
+                fprintf('\n[!] RESULT: System is INCONSISTENT (No Solution).\n');
+                x_gen = []; basis = []; x_p = [];
+                return;
+            end
+            
+            % 3. Extract Particular Solution (setting free variables to 0)
+            x_p = sym(zeros(cols, 1));
+            [~, pivotCols] = rref(double(A_sym)); 
+            for i = 1:length(pivotCols)
+                x_p(pivotCols(i)) = R(i, end);
+            end
+            
+            % 4. Extract Null Space Basis (Homogeneous Solution)
+            % sym/null automatically returns the rational basis
+            basis = null(A_sym); 
+            [~, k] = size(basis);
+            
+            % 5. Format outputs
+            if k > 0
+                s_vars = sym('s', [k, 1], 'real');
+                x_gen = simplify(x_p + (basis * s_vars));
+            else
+                x_gen = x_p;
+            end
+            
+            % --- BEAUTIFIED OUTPUT ---
+            fprintf('\n==================================================\n');
+            fprintf('          PARAMETRIC SYSTEM SOLUTION              \n');
+            fprintf('==================================================\n');
+            if k == 0
+                fprintf('RESULT: Unique Solution Found\n');
+                disp(x_p);
+            else
+                fprintf('RESULT: Infinite Solutions (Parametric Form)\n');
+                fprintf('Particular Solution (x_p):\n');
+                disp(x_p);
+                fprintf('Null Space Basis (v_i):\n');
+                disp(basis);
+                fprintf('--------------------------------------------------\n');
+                fprintf('General Equation: x = x_p');
+                for i = 1:k
+                    fprintf(' + s%d*v%d', i, i);
+                end
+                fprintf('\n');
+            end
+            fprintf('==================================================\n\n');
+        end
+
         % Chapter 2: Matrices
 
         function check = isSquare(~, A)
