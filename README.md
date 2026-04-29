@@ -686,6 +686,7 @@ tk.computeSVD(A_Rect);
 </details>
 
 ### Chapter 7: System of Linear Differential Equations
+
 <details>
 <summary><mark><code>generateInitialConditions(n)</code></mark></summary>
 
@@ -693,24 +694,24 @@ tk.computeSVD(A_Rect);
 </details>
 
 <details>
-<summary><mark><code>solveDifferentialSystem(A, isInitial)</code></mark><summary>
+<summary><mark><code>solveDifferentialSystem(A, isInitial)</code></mark></summary>
 
 ### The core ODE solver. This method doesn't just output the final answer; it walks through the characteristic analysis (eigenvalues) before constructing the general or specific solution. 
 
 It is mathematically robust and automatically handles:
 * Standard distinct real roots.
-* Complex eigenvalues (automatically simplifying into $\sin$ and $\cos$ terms).
-* **Defective Matrices** (repeated roots that require generalized eigenvectors, outputting the correct $t \cdot e^{\lambda t}$ terms).
+* Complex eigenvalues (automatically simplifying into sin and cos terms).
+* **Defective Matrices** (repeated roots that require generalized eigenvectors, outputting the correct t * e^(λt) terms).
 * Decoupled systems and zero-eigenvalue states.
 
 #### Parameters
-* **`A`**: The $n \times n$ coefficient matrix representing the system $y' = Ay$.
+* **`A`**: The n x n coefficient matrix representing the system y' = Ay.
 * **`isInitial`** *(optional, logical)*: 
-    * `false` (**Default**): Returns the General Solution with unknown constants ($C_1, C_2, \dots$).
-    * `true`: Triggers an interactive prompt for $y(0)$ values and solves the Initial Value Problem (IVP).
+    * `false` (**Default**): Returns the General Solution with unknown constants (C1, C2...).
+    * `true`: Triggers an interactive prompt for y(0) values and solves the Initial Value Problem (IVP).
 
 > [!TIP]
-> **Exam Verification:** Use the `false` flag to check your manual eigenvalues and characteristic equations. If your manual $\lambda$ values don't match the "Characteristic Analysis" section of the output, you likely made a sign error in your determinant!
+> **Exam Verification:** Use the `false` flag to check your manual eigenvalues and characteristic equations. If your manual λ values don't match the "Characteristic Analysis" section of the output, you likely made a sign error in your determinant!
 
 #### 🛠 Usage Example 1: General Solution
 ```matlab
