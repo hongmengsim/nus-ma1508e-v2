@@ -658,6 +658,7 @@ classdef MA1508E
         end
 
         function RI = rightInverse(~, A)
+
             [rows, cols] = size(A);
             if rows > cols 
                 fprintf("The matrix does not have a right inverse!\n");
@@ -671,6 +672,41 @@ classdef MA1508E
             
             fprintf("The right inverse of the matrix exists.\n")
             RI = A' * inv(A * A');
+        end
+
+        function [A, b, vars] = parseEquations(obj, eqs, vars)
+            % Extracts coefficient matrix A and constant vector b from string equations
+            
+            % FIX: Use str2sym instead of sym to evaluate strings with operators
+            eqs_sym = str2sym(eqs);
+            
+            % If the user doesn't specify variables, auto-detect them
+            if nargin < 3
+                detected_vars = symvar(eqs_sym);
+                vars = detected_vars;
+            else
+                % FIX: Safely evaluate the vars array if passed as a string
+                if ischar(vars) || isstring(vars)
+                    vars = str2sym(vars);
+                else
+                    vars = sym(vars);
+                end
+            end
+            
+            % Extract A and b using MATLAB's built-in symbolic solver
+            [A, b] = equationsToMatrix(eqs_sym, vars);
+            
+            % --- BEAUTIFIED OUTPUT ---
+            fprintf('\n==================================================\n');
+            fprintf('             EQUATION PARSER EXTRACTOR            \n');
+            fprintf('==================================================\n');
+            fprintf('Variables Identified (Columns of A):\n');
+            disp(vars);
+            fprintf('Coefficient Matrix (A):\n');
+            disp(A);
+            fprintf('Constant Vector (b):\n');
+            disp(b);
+            fprintf('==================================================\n\n');
         end
         
         function getMatrixSpaces(obj, A)

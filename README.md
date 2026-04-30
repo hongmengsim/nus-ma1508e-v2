@@ -543,6 +543,41 @@ A_Diag = tk.similarityTransform(A_Standard, E, B_Eigen);
 </details>
 
 <details>
+<summary><mark><code>parseEquations(eqs, vars)</code></mark></summary>
+
+### Converts set-builder equations directly into matrix form $A\mathbf{x} = \mathbf{b}$.
+This function reads standard mathematical equations (provided as strings) and automatically extracts the coefficient matrix $A$ and the constant vector $\mathbf{b}$. This bridges the gap between how questions are written on paper and how they are solved in MATLAB.
+
+#### Parameters
+* **`eqs`**: An array of strings representing the equations.
+* **`vars`**: *(Optional)* An array of symbolic variables. If left blank, the toolkit will automatically detect all variables in alphabetical order.
+
+#### 🛠 Usage Example
+```matlab
+% Define the equation from the set builder notation
+eq = "a*x1 + b*x2 + c*x3 + d*x4 = 1";
+
+% Define the specific variables (prevents treating constants as variables)
+vars = str2sym('[x1, x2, x3, x4]');
+
+% Parse it!
+[A, b] = tk.parseEquations(eq, vars);
+
+% Output:
+% Variables Identified (Columns of A):
+% [x1, x2, x3, x4]
+%
+% Coefficient Matrix (A):
+% [a, b, c, d]
+%
+% Constant Vector (b):
+%  1
+
+% You can now feed A and b directly into tk.solveSystem(A, b)!
+```
+</details>
+
+<details>
 <summary><mark><code>getMatrixSpaces(A)</code></mark></summary>
 
 ### Instantly extracts the exact basis vectors for the fundamental spaces associated with a matrix.
