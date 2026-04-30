@@ -305,7 +305,7 @@ classdef MA1508E
             
             % 3. Extract Particular Solution (setting free variables to 0)
             x_p = sym(zeros(cols, 1));
-            [~, pivotCols] = rref(double(A_sym)); 
+            [~, pivotCols] = rref(A_sym); 
             for i = 1:length(pivotCols)
                 x_p(pivotCols(i)) = R(i, end);
             end
@@ -721,7 +721,7 @@ classdef MA1508E
             
             % --- COLUMN SPACE ---
             % Find pivot columns using the numeric rref to get indices
-            [~, pivotCols] = rref(double(A_sym)); 
+            [~, pivotCols] = rref(A_sym); 
             fprintf('--- COLUMN SPACE BASIS (Pivot Columns of A) ---\n');
             disp(A_sym(:, pivotCols));
             
@@ -1037,6 +1037,11 @@ classdef MA1508E
             end
         
             % --- FINAL BEAUTIFIED OUTPUT ---
+            % (Calculations for display)
+            p_vec = simplify(A_sym * x_p);
+            err_vec = simplify(b_sym - p_vec);
+            err_mag = simplify(sqrt(sum(err_vec.^2)));
+
             fprintf('\n==================================================\n');
             fprintf('             LEAST SQUARES ANALYSIS               \n');
             fprintf('==================================================\n');
@@ -1060,14 +1065,18 @@ classdef MA1508E
                 end
                 
                 fprintf('--------------------------------------------------\n');
-                fprintf('Parametric Equation:\n');
-                fprintf('  x = x_p');
-                % Loop-based printing avoids all string concatenation errors
+                fprintf('Parametric Equation: x = x_p');
                 for i = 1:k
                     fprintf(' + s%d*v%d', i, i);
                 end
                 fprintf('\n');
             end
+
+            fprintf('\n--- GEOMETRIC INTERPRETATION ---\n');
+            fprintf('Projection of b onto Col(A):\n');
+            disp(p_vec);
+            fprintf('Least Squares Error (||b - Ax_p||):\n');
+            fprintf('  %s\n', char(err_mag));
             fprintf('==================================================\n\n');
         end
         
