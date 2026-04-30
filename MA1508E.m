@@ -116,35 +116,104 @@ classdef MA1508E
         end
 
         function res = performERO(obj, A)
-            [rows, ~] = size(A);
-            M = A;
+            [~, ~] = size(A);
+            
+            % 1. FORCE the matrix into the symbolic engine
+            M = sym(A); 
             command = "";
+            
+            disp('Current Matrix:');
+            disp(M);
+            
             while true
                 command = input("Enter the elementary row operation: ", 's'); 
+                command_trim = strtrim(command);
                 
-                if command == "quit" || command == "exit"
+                if strcmpi(command_trim, "quit") || strcmpi(command_trim, "exit")
                     res = M;
+                    fprintf('Exiting interactive mode.\n\n');
                     return;
                 end
                 
-                % --- SANITIZATION START ---
-                command = upper(command); 
-                % Fix R2-R1 to R2 - R1
-                command = regexprep(command, '([+-])\s*(R\d)', '$1 $2'); 
-                % Force single spaces
-                command = regexprep(command, '\s*([+-])\s*', ' $1 '); 
-                command = regexprep(command, '\s*S\s*', ' S ');      
-                command = strtrim(command);                 
-                % --- SANITIZATION END ---
-                
-                if ~obj.isValidERO(command)
-                    fprintf("Invalid ERO.\n");
-                    continue;
+                try
+                    % --- PARSE SWAP ---
+                    % Matches: R1 S R2 or R1 <-> R2
+                    swap_match = regexp(command_trim, '^R(\d+)\s*(S|<->)\s*R(\d+)$', 'tokens', 'once', 'ignorecase');
+                    if ~isempty(swap_match)
+                        r1 = str2double(swap_match{1});
+                        r2 = str2double(swap_match{2});
+                        
+                        % Execute Swap
+                        M([r1, r2], :) = M([r2, r1], :);
+                        
+                        fprintf("\n--> Swap R%d <-> R%d:\n", r1, r2);
+                        disp(M);
+                        continue;
+                    end
+                    
+                    % --- PARSE ADD ---
+                    % Matches: R2 + k*R1 or R2 - (c/a)*R1
+                    add_match = regexp(command_trim, '^R(\d+)\s*([+-])\s*(.*?)\s*\*?\s*R(\d+)$', 'tokens', 'once', 'ignorecase');
+                    if ~isempty(add_match)
+                        r_target = str2double(add_match{1});
+                        sign_str = add_match{2};
+                        scalar_str = strtrim(add_match{3});
+                        r_source = str2double(add_match{4});
+                        
+                        % If user types just "R2 - R1", default the scalar to '1'
+                        if isempty(scalar_str)
+                            scalar_str = '1';
+                        end
+                        
+                        % Convert string to symbolic scalar securely using str2sym
+                        scalar = str2sym(scalar_str);
+                        if sign_str == '-'
+                            scalar = -scalar;
+                        end
+                        
+                        % Execute Add and Simplify
+                        M(r_target, :) = simplify(M(r_target, :) + scalar * M(r_source, :));
+                        
+                        if sign_str == '-'
+                            fprintf("\n--> R%d -> R%d - (%s)*R%d:\n", r_target, r_target, char(abs(scalar)), r_source);
+                        else
+                            fprintf("\n--> R%d -> R%d + (%s)*R%d:\n", r_target, r_target, char(scalar), r_source);
+                        end
+                        disp(M);
+                        continue;
+                    end
+                    
+                    % --- PARSE SCALE ---
+                    % Matches: k * R1 or (1/a)*R1
+                    scale_match = regexp(command_trim, '^(.*?)\s*\*?\s*R(\d+)$', 'tokens', 'once', 'ignorecase');
+                    if ~isempty(scale_match)
+                        scalar_str = strtrim(scale_match{1});
+                        r_target = str2double(scale_match{2});
+                        
+                        if isempty(scalar_str) || strcmp(scalar_str, '-')
+                             fprintf("Invalid scale multiplier. Please specify a value (e.g., -1 * R1).\n");
+                             continue;
+                        end
+                        
+                        % Convert string to symbolic scalar securely
+                        scalar = str2sym(scalar_str);
+                        
+                        % Execute Scale and Simplify
+                        M(r_target, :) = simplify(M(r_target, :) * scalar);
+                        
+                        fprintf("\n--> R%d -> (%s)*R%d:\n", r_target, char(scalar), r_target);
+                        disp(M);
+                        continue;
+                    end
+                    
+                    % Fallback if no regex patterns matched
+                    fprintf("Invalid ERO format. Please use the standard formats (e.g., R2 - a*R1).\n");
+                    
+                catch ME
+                    % Catches mathematical syntax errors (e.g., unbalanced parentheses in the scalar)
+                    fprintf("Mathematical parsing error. Check your algebraic syntax.\n");
+                    fprintf("Error Details: %s\n", ME.message);
                 end
-                
-                M = obj.generateElemMatrix(command, rows) * M;
-                fprintf("--> %s:\n\n", command);
-                disp(M);
             end
         end
 
@@ -305,7 +374,21 @@ classdef MA1508E
             
             % 3. Extract Particular Solution (setting free variables to 0)
             x_p = sym(zeros(cols, 1));
-            [~, pivotCols] = rref(A_sym); 
+            % --- Find Pivot Columns Manually ---
+            % sym/rref only returns one argument, so we must extract pivots manually
+            R_sym = rref(A_sym);
+            [m_rows, n_cols] = size(R_sym);
+            pivotCols = [];
+            
+            for i = 1:m_rows
+                for j = 1:n_cols
+                    % The first non-zero entry in a row of an RREF matrix is the pivot
+                    if R_sym(i, j) ~= 0
+                        pivotCols = [pivotCols, j];
+                        break; % Pivot found, move to the next row
+                    end
+                end
+            end 
             for i = 1:length(pivotCols)
                 x_p(pivotCols(i)) = R(i, end);
             end
@@ -720,8 +803,19 @@ classdef MA1508E
             fprintf('==================================================\n');
             
             % --- COLUMN SPACE ---
-            % Find pivot columns using the numeric rref to get indices
-            [~, pivotCols] = rref(A_sym); 
+            R_sym = rref(A_sym);
+            [m_rows, n_cols] = size(R_sym);
+            pivotCols = [];
+            
+            for i = 1:m_rows
+                for j = 1:n_cols
+                    if R_sym(i, j) ~= 0
+                        pivotCols = [pivotCols, j];
+                        break;
+                    end
+                end
+            end
+            
             fprintf('--- COLUMN SPACE BASIS (Pivot Columns of A) ---\n');
             disp(A_sym(:, pivotCols));
             
