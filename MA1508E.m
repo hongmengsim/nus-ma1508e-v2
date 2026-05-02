@@ -793,6 +793,7 @@ classdef MA1508E
         end
         
         function getMatrixSpaces(obj, A)
+
             % Instantly extracts the exact basis vectors for the three fundamental spaces
             
             % 1. Convert to symbolic explicitly to force fractional outputs
@@ -844,6 +845,76 @@ classdef MA1508E
                 disp(ns);
             end
             
+            fprintf('==================================================\n\n');
+        end
+
+        function coeffs = bestFitHyperplane(obj, Points, TargetValues)
+            % Finds the best-fit hyperplane equation for a set of points using exact symbolic least squares.
+            % Specifically formatted for MA1508E exam questions (e.g., AY2023/2024 Q18).
+            
+            % 1. Force inputs into the symbolic engine for exact fractions
+            A_sym = sym(Points);
+            
+            % If TargetValues is a scalar (like '1'), expand it to a column vector matching the points
+            if isscalar(TargetValues)
+                b_sym = sym(TargetValues * ones(size(A_sym, 1), 1));
+                target_val = num2str(TargetValues);
+            else
+                b_sym = sym(TargetValues);
+                target_val = 'Target'; % Fallback if it's a mixed vector
+            end
+            
+            % 2. Solve the Normal Equations EXACTLY
+            % We must explicitly construct (A^T * A)x = A^T * b to force a symbolic least-squares fit
+            LHS = transpose(A_sym) * A_sym;
+            RHS = transpose(A_sym) * b_sym;
+            coeffs = LHS \ RHS;
+            
+            fprintf('\n==================================================\n');
+            fprintf('          BEST-FIT HYPERPLANE (LEAST SQUARES)     \n');
+            fprintf('==================================================\n');
+            
+            disp('Exact Least-Squares Coefficients [a, b, c, ...]^T:');
+            disp(coeffs);
+            
+            % 3. Format the explicit hyperplane equation mathematically
+            [n, ~] = size(coeffs);
+            eq_str = 'V = { x in R^n | ';
+            
+            is_first = true;
+            for i = 1:n
+                val = coeffs(i);
+                if val ~= 0
+                    % Handle signs and spacing
+                    if ~is_first
+                        if val > 0
+                            eq_str = [eq_str, ' + '];
+                        else
+                            eq_str = [eq_str, ' - '];
+                            val = abs(val);
+                        end
+                    else
+                        if val < 0
+                            eq_str = [eq_str, '-'];
+                            val = abs(val);
+                        end
+                        is_first = false;
+                    end
+                    
+                    % Format the specific term (hide the '1' if the coefficient is exactly 1)
+                    if val == 1
+                        eq_str = [eq_str, sprintf('x_%d', i)];
+                    else
+                        eq_str = [eq_str, sprintf('(%s)x_%d', char(val), i)];
+                    end
+                end
+            end
+            
+            % Close the set notation equation
+            eq_str = [eq_str, sprintf(' = %s }', target_val)];
+            
+            fprintf('\n--- Explicit Hyperplane Equation ---\n');
+            fprintf('%s\n', eq_str);
             fprintf('==================================================\n\n');
         end
 
@@ -1369,6 +1440,41 @@ classdef MA1508E
         end
 
         % Chapter 7: System of Linear Differential Equations
+
+        function extract_complex_ode(~, lambda, v)
+            % Extracts the real and imaginary components EXACTLY for ODE solutions
+            % Inputs:
+            %   lambda: A single complex eigenvalue
+            %   v: The corresponding complex eigenvector
+            
+            % 1. Force inputs into the symbolic engine for exact arithmetic
+            lambda_sym = sym(lambda);
+            v_sym = sym(v);
+            
+            % 2. Extract components
+            alpha = simplify(real(lambda_sym));
+            beta = simplify(imag(lambda_sym));
+            u = simplify(real(v_sym));
+            w = simplify(imag(v_sym));
+            
+            fprintf('--- EXACT ODE Transformation Data ---\n');
+            fprintf('Alpha (Exponential power): %s\n', char(alpha));
+            fprintf('Beta (Trig frequency): %s\n\n', char(beta));
+            
+            disp('Real vector (u):');
+            disp(u);
+            disp('Imaginary vector (w):');
+            disp(w);
+            
+            fprintf('--- Exact Solution Formulas ---\n');
+            
+            % 3. Convert symbolic values to strings for clean text formatting
+            a_str = char(alpha);
+            b_str = char(beta);
+            
+            fprintf('x_r(t) = e^(%s * t) * [ cos(%s * t)*u - sin(%s * t)*w ]\n', a_str, b_str, b_str);
+            fprintf('x_i(t) = e^(%s * t) * [ sin(%s * t)*u + cos(%s * t)*w ]\n', a_str, b_str, b_str);
+        end
 
         function v2 = getGeneralisedEigenvector(obj, A, lambda)
             [rows, cols] = size(A);
